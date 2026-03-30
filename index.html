@@ -102,30 +102,16 @@
     <p>ACC/AHA guideline-based therapy &middot; ASCVD risk &middot; Organ damage &middot; Drug interactions &middot; PDF export</p>
   </div>
 
-  <!-- Voice intake -->
-  <div class="card" id="voice-card">
-    <div class="sec">Voice Intake</div>
-    <p style="font-size:13px;color:var(--text2);margin-bottom:1rem">Speak the patient's history out loud — age, sex, BP, labs, comorbidities, meds, anything you have. The form will auto-fill from what it hears, then flag what's missing.</p>
-    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
-      <button id="mic-btn" onclick="toggleRecording()" style="display:flex;align-items:center;gap:9px;padding:11px 20px;font-size:14px;font-weight:600;background:var(--blue);color:#fff;border:none;border-radius:var(--radius-sm);cursor:pointer;transition:background .15s">
-        <svg id="mic-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
-        <span id="mic-label">Start Recording</span>
-      </button>
-      <div id="rec-indicator" style="display:none;align-items:center;gap:8px;font-size:13px;color:#A32D2D;font-weight:500">
-        <div id="rec-dot" style="width:10px;height:10px;border-radius:50%;background:#A32D2D;animation:pulse 1s infinite"></div>
-        Recording… <span id="rec-timer">0s</span>
-      </div>
-      <div id="voice-status" style="font-size:13px;color:var(--text2)"></div>
-    </div>
-    <div id="transcript-box" style="display:none;margin-top:1rem;padding:12px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;color:var(--text2);line-height:1.65;max-height:120px;overflow-y:auto"></div>
-    <div id="missing-box" style="display:none;margin-top:.75rem"></div>
-  </div>
-
-  <style>
-    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
-  </style>
-
   <div id="form-wrap">
+
+    <div class="card" style="background:var(--bg2);border-color:var(--border)">
+      <div class="sec">Anthropic API Key <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:11px;color:var(--text3)">&mdash; required for PDF narrative (optional)</span></div>
+      <div style="display:flex;gap:8px;max-width:520px">
+        <input type="password" id="api-key" placeholder="sk-ant-api03-..." style="flex:1;font-family:monospace;font-size:13px" oninput="localStorage.setItem('htn_api_key',this.value)">
+        <button onclick="var i=document.getElementById('api-key');i.type=i.type==='password'?'text':'password';this.textContent=i.type==='password'?'Show':'Hide'" style="padding:9px 14px;font-size:13px;border:1px solid var(--border2);border-radius:var(--radius-sm);background:var(--bg);cursor:pointer;color:var(--text2)">Show</button>
+      </div>
+      <p style="font-size:11px;color:var(--text3);margin-top:6px">Saved to your browser only. Sent directly to api.anthropic.com to generate the PDF clinical narrative.</p>
+    </div>
 
     <div class="card">
       <div class="sec">Patient Identification</div>
@@ -240,14 +226,14 @@
 <script>
 const DRUGS = {
   thiazide: { name:"Hydrochlorothiazide / Chlorthalidone", cls:"Thiazide diuretic", ci:["thiazide_ci","gout"], labs:["BMP (Na+, K+, Cr) at baseline and 4 weeks","Uric acid if gout risk"], cheap:true, cheapNote:"", notes:"Chlorthalidone preferred — longer half-life, superior CV outcome data. First-line for uncomplicated hypertension.", avoid:[], prefer:[] },
-  acei: { name:"Lisinopril / Enalapril", cls:"ACE Inhibitor", ci:["acei_ci","pregnancy","hyperkalemia","bilateral_ras"], labs:["BMP (K+, Cr/eGFR) at baseline","Repeat BMP 1–2 weeks after initiation","Pregnancy test if applicable"], cheap:true, cheapNote:"", notes:"First-line for CKD with proteinuria, diabetes, HFrEF, post-MI. ~10% cough incidence. Do not combine with ARB (dual RAAS blockade).", avoid:["arb"], prefer:["ckd","diabetes","hf","cad","stroke","pad"] },
+  acei: { name:"Lisinopril / Enalapril", cls:"ACE Inhibitor", ci:["acei_ci","pregnancy","hyperkalemia","bilateral_ras"], labs:["BMP (K+, Cr/eGFR) at baseline","Repeat BMP 1-2 weeks after initiation","Pregnancy test if applicable"], cheap:true, cheapNote:"", notes:"First-line for CKD with proteinuria, diabetes, HFrEF, post-MI. ~10% cough incidence. Do not combine with ARB (dual RAAS blockade).", avoid:["arb"], prefer:["ckd","diabetes","hf","cad","stroke","pad"] },
   arb: { name:"Losartan / Valsartan", cls:"Angiotensin Receptor Blocker", ci:["pregnancy","hyperkalemia","bilateral_ras","arb_ci"], labs:["BMP (K+, Cr/eGFR) at baseline and after initiation"], cheap:false, cheapNote:"Losartan is generic — most affordable ARB option", notes:"Use when ACEi not tolerated (cough, angioedema). Equivalent renal/cardiac indications. Do not combine with ACEi.", avoid:["acei"], prefer:["ckd","diabetes","hf","stroke"] },
   ccb_dih: { name:"Amlodipine", cls:"CCB — Dihydropyridine", ci:["ccb_ci"], labs:["No routine labs required"], cheap:true, cheapNote:"", notes:"Preferred CCB for hypertension. Well-tolerated in elderly and Black patients. Common side effect: peripheral edema.", avoid:[], prefer:["pad","metabolic"] },
   ccb_nondih: { name:"Diltiazem / Verapamil", cls:"CCB — Non-Dihydropyridine", ci:["ccb_ci","bradycardia","hf"], labs:["ECG before initiation (assess PR interval)","LFTs for long-term diltiazem use"], cheap:false, cheapNote:"Diltiazem ER generic available", notes:"Rate control in AFib. Avoid in HFrEF. Do NOT combine with beta-blockers (complete heart block risk).", avoid:["bb"], prefer:["afib"] },
   bb: { name:"Metoprolol Succinate / Carvedilol", cls:"Beta Blocker", ci:["bb_ci","asthma","bradycardia","raynaud"], labs:["Baseline HR and BP","ECG if conduction disease suspected"], cheap:true, cheapNote:"", notes:"Metoprolol succinate (ER) for CAD/HFrEF. Carvedilol preferred in HFrEF for alpha-blocking effect. Not first-line for uncomplicated HTN per ACC/AHA 2017.", avoid:["ccb_nondih"], prefer:["hf","cad","afib","migraines"] },
-  mra: { name:"Spironolactone", cls:"Mineralocorticoid Receptor Antagonist", ci:["hyperkalemia","bilateral_ras","mra_ci"], labs:["BMP (K+, Cr) at baseline","Recheck at 4 weeks then q3–6 months","Avoid if eGFR < 30 mL/min"], cheap:true, cheapNote:"", notes:"Excellent fourth agent for resistant hypertension. Also beneficial in HFpEF and primary aldosteronism. Monitor potassium closely.", avoid:[], prefer:["hfpef"] },
+  mra: { name:"Spironolactone", cls:"Mineralocorticoid Receptor Antagonist", ci:["hyperkalemia","bilateral_ras","mra_ci"], labs:["BMP (K+, Cr) at baseline","Recheck at 4 weeks then q3-6 months","Avoid if eGFR < 30 mL/min"], cheap:true, cheapNote:"", notes:"Excellent fourth agent for resistant hypertension. Also beneficial in HFpEF and primary aldosteronism. Monitor potassium closely.", avoid:[], prefer:["hfpef"] },
   alpha1: { name:"Doxazosin / Prazosin", cls:"Alpha-1 Blocker", ci:[], labs:["Standing BP to assess orthostatic hypotension"], cheap:true, cheapNote:"", notes:"Useful add-on especially in men with BPH. First-dose hypotension risk — start low. Not preferred as monotherapy.", avoid:[], prefer:["prostate"] },
-  hydralazine: { name:"Hydralazine + Isosorbide Dinitrate", cls:"Direct Vasodilator + Nitrate", ci:[], labs:["ANA titer — drug-induced lupus risk at high chronic doses","BMP"], cheap:true, cheapNote:"", notes:"Used in HFrEF, especially in Black patients or when ACEi/ARB not tolerated. Requires 2–3x daily dosing.", avoid:[], prefer:["hf"] },
+  hydralazine: { name:"Hydralazine + Isosorbide Dinitrate", cls:"Direct Vasodilator + Nitrate", ci:[], labs:["ANA titer — drug-induced lupus risk at high chronic doses","BMP"], cheap:true, cheapNote:"", notes:"Used in HFrEF, especially in Black patients or when ACEi/ARB not tolerated. Requires 2-3x daily dosing.", avoid:[], prefer:["hf"] },
   methyldopa: { name:"Methyldopa", cls:"Central Alpha-2 Agonist", ci:["afib"], labs:["LFTs at baseline (rare hepatotoxicity)","CBC (rare hemolytic anemia)","Coombs test with prolonged use"], cheap:true, cheapNote:"", notes:"Drug of choice in pregnancy. Well-established maternal and fetal safety profile.", avoid:[], prefer:["pregnancy"] },
   labetalol: { name:"Labetalol", cls:"Alpha/Beta Blocker", ci:["asthma","bradycardia"], labs:["LFTs (rare hepatotoxicity)","Baseline HR"], cheap:false, cheapNote:"Generic labetalol available", notes:"Safe in pregnancy; second-line after methyldopa. Used for hypertensive urgency/emergency. IV form available.", avoid:[], prefer:["pregnancy","cad"] },
   clonidine: { name:"Clonidine", cls:"Central Alpha-2 Agonist", ci:[], labs:["Monitor HR closely"], cheap:true, cheapNote:"", notes:"Add-on for resistant HTN. Rebound hypertension if stopped abruptly — always taper. Avoid in non-adherent patients.", avoid:[], prefer:[] },
@@ -282,7 +268,7 @@ function liveStage() {
 
 function bpStage(s, d) {
   if (s >= 180 || d >= 120) return { lbl:"Hypertensive Crisis", color:"#A32D2D", pct:100, code:"crisis" };
-  if (s >= 160 || d >= 100) return { lbl:"Stage 2 — Severe", color:"#A32D2D", pct:82, code:"s2hi" };
+  if (s >= 160 || d >= 100) return { lbl:"Stage 2 - Severe", color:"#A32D2D", pct:82, code:"s2hi" };
   if (s >= 140 || d >= 90)  return { lbl:"Stage 2 Hypertension", color:"#BA7517", pct:62, code:"s2" };
   if (s >= 130 || d >= 80)  return { lbl:"Stage 1 Hypertension", color:"#BA7517", pct:42, code:"s1" };
   if (s >= 120)              return { lbl:"Elevated BP", color:"#3B6D11", pct:22, code:"elevated" };
@@ -336,243 +322,6 @@ function drawGauge(pct, color) {
 }
 
 function ascvdCat(v) { return v>=20?'High risk':v>=7.5?'Borderline/intermediate':v>=5?'Low-intermediate':'Low risk'; }
-
-// ── Voice intake ──────────────────────────────────────────────────────────────
-let mediaRecorder = null, audioChunks = [], recInterval = null, recSecs = 0, isRecording = false;
-
-async function toggleRecording() {
-  if (isRecording) { stopRecording(); return; }
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    audioChunks = []; recSecs = 0;
-    mediaRecorder = new MediaRecorder(stream, { mimeType: getSupportedMime() });
-    mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
-    mediaRecorder.onstop = () => { stream.getTracks().forEach(t => t.stop()); processAudio(); };
-    mediaRecorder.start(250);
-    isRecording = true;
-    document.getElementById('mic-btn').style.background = '#A32D2D';
-    document.getElementById('mic-label').textContent = 'Stop Recording';
-    document.getElementById('rec-indicator').style.display = 'flex';
-    document.getElementById('voice-status').textContent = '';
-    recInterval = setInterval(() => { recSecs++; document.getElementById('rec-timer').textContent = recSecs + 's'; }, 1000);
-  } catch(e) {
-    document.getElementById('voice-status').textContent = 'Microphone access denied. Please allow microphone permission and try again.';
-  }
-}
-
-function stopRecording() {
-  if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
-  clearInterval(recInterval);
-  isRecording = false;
-  document.getElementById('mic-btn').style.background = 'var(--blue)';
-  document.getElementById('mic-label').textContent = 'Start Recording';
-  document.getElementById('rec-indicator').style.display = 'none';
-  document.getElementById('voice-status').textContent = 'Processing…';
-}
-
-function getSupportedMime() {
-  const types = ['audio/webm;codecs=opus','audio/webm','audio/ogg;codecs=opus','audio/mp4'];
-  for (const t of types) if (MediaRecorder.isTypeSupported(t)) return t;
-  return '';
-}
-
-async function processAudio() {
-  const mime = audioChunks[0]?.type || 'audio/webm';
-  const blob = new Blob(audioChunks, { type: mime });
-  const ext = mime.includes('mp4') ? 'mp4' : mime.includes('ogg') ? 'ogg' : 'webm';
-
-  // Convert to base64
-  const base64 = await new Promise(res => {
-    const r = new FileReader();
-    r.onload = () => res(r.result.split(',')[1]);
-    r.readAsDataURL(blob);
-  });
-
-  document.getElementById('voice-status').textContent = 'Transcribing…';
-
-  try {
-    // Use Claude's vision/audio via a text prompt with base64 audio isn't supported directly,
-    // so we use the Whisper-compatible approach: send to Claude asking it to act on a transcript
-    // we first get via Web Speech API fallback, OR we send audio as document to Claude
-    // Best path: use Claude with audio input (claude-3-5 supports it)
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        messages: [{
-          role: 'user',
-          content: [
-            {
-              type: 'document',
-              source: { type: 'base64', media_type: mime.split(';')[0], data: base64 }
-            },
-            {
-              type: 'text',
-              text: `This is a clinical voice note about a hypertension patient. Please:
-1. Transcribe exactly what was said.
-2. Extract all clinical data mentioned.
-
-Return ONLY valid JSON (no markdown) with this structure:
-{
-  "transcript": "...",
-  "extracted": {
-    "ptname": "", "ptmrn": "", "ptmd": "",
-    "sbp": null, "dbp": null, "hr": null,
-    "age": null, "sex": "", "race": "",
-    "tc": null, "hdl": null,
-    "smoke": "",
-    "creat": null, "egfr": null, "acr": null,
-    "lvh": false, "retino": false, "prevmi": false,
-    "dm_risk": false, "statin": false, "aspirin": false,
-    "comorbidities": [],
-    "contraindications": [],
-    "uninsured": false
-  },
-  "missing": []
-}
-
-For "missing", list only clinically important fields that were NOT mentioned, from: systolic BP, diastolic BP, age, sex, race, total cholesterol, HDL, smoking status, eGFR/creatinine, urine ACR.
-For comorbidities, use values from: ckd, diabetes, hf, hfpef, cad, stroke, afib, pregnancy, migraines, raynaud, prostate, gout, pad, metabolic.
-For contraindications, use: acei_ci, bb_ci, ccb_ci, thiazide_ci, hyperkalemia, bilateral_ras, asthma, bradycardia, arb_ci, mra_ci.
-For sex: "male" or "female". For race: "black", "white", or "other". For smoke: "never", "former", or "current".`
-            }
-          ]
-        }]
-      })
-    });
-
-    const data = await resp.json();
-    const txt = data.content?.filter(b => b.type === 'text').map(b => b.text).join('').replace(/```json|```/g, '').trim();
-    const result = JSON.parse(txt);
-    applyExtracted(result);
-  } catch(e) {
-    // Fallback: try Web Speech API transcription then send text to Claude
-    document.getElementById('voice-status').textContent = 'Direct audio failed — trying alternate method…';
-    tryWebSpeechFallback(blob);
-  }
-}
-
-function tryWebSpeechFallback(blob) {
-  // If audio API fails, use Web Speech Recognition on a fresh recording attempt
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SpeechRecognition) {
-    document.getElementById('voice-status').textContent = 'Audio processing unavailable in this browser. Please try Chrome or Edge.';
-    return;
-  }
-  document.getElementById('voice-status').textContent = 'Please speak again — using browser speech recognition…';
-  const recog = new SpeechRecognition();
-  recog.continuous = true; recog.interimResults = false; recog.lang = 'en-US';
-  let finalText = '';
-  recog.onresult = e => { for (let i = e.resultIndex; i < e.results.length; i++) if (e.results[i].isFinal) finalText += e.results[i][0].transcript + ' '; };
-  recog.onend = () => { if (finalText) extractFromText(finalText.trim()); else document.getElementById('voice-status').textContent = 'No speech detected. Try again.'; };
-  recog.start();
-  setTimeout(() => recog.stop(), 30000);
-}
-
-async function extractFromText(transcript) {
-  document.getElementById('transcript-box').style.display = 'block';
-  document.getElementById('transcript-box').textContent = transcript;
-  document.getElementById('voice-status').textContent = 'Extracting clinical data…';
-  try {
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514', max_tokens: 800,
-        messages: [{ role: 'user', content: `Extract clinical data from this hypertension patient history. Return ONLY valid JSON, no markdown.
-
-Transcript: "${transcript}"
-
-Return JSON:
-{
-  "transcript": "${transcript.replace(/"/g,'\\"')}",
-  "extracted": {
-    "ptname": "", "ptmrn": "", "ptmd": "",
-    "sbp": null, "dbp": null, "hr": null,
-    "age": null, "sex": "", "race": "",
-    "tc": null, "hdl": null, "smoke": "",
-    "creat": null, "egfr": null, "acr": null,
-    "lvh": false, "retino": false, "prevmi": false,
-    "dm_risk": false, "statin": false, "aspirin": false,
-    "comorbidities": [], "contraindications": [], "uninsured": false
-  },
-  "missing": []
-}
-
-Comorbidity values: ckd, diabetes, hf, hfpef, cad, stroke, afib, pregnancy, migraines, raynaud, prostate, gout, pad, metabolic.
-Contraindication values: acei_ci, bb_ci, ccb_ci, thiazide_ci, hyperkalemia, bilateral_ras, asthma, bradycardia, arb_ci, mra_ci.
-sex: "male"/"female". race: "black"/"white"/"other". smoke: "never"/"former"/"current".
-For missing: list important unprovided fields from: systolic BP, diastolic BP, age, sex, total cholesterol, HDL, smoking status, creatinine/eGFR.` }]
-      })
-    });
-    const data = await resp.json();
-    const txt = data.content.filter(b => b.type === 'text').map(b => b.text).join('').replace(/```json|```/g, '').trim();
-    applyExtracted(JSON.parse(txt));
-  } catch(e) {
-    document.getElementById('voice-status').textContent = 'Extraction failed. Please fill the form manually.';
-  }
-}
-
-function applyExtracted(result) {
-  const e = result.extracted || {};
-  const transcript = result.transcript || '';
-
-  // Show transcript
-  if (transcript) {
-    document.getElementById('transcript-box').style.display = 'block';
-    document.getElementById('transcript-box').textContent = '"' + transcript + '"';
-  }
-
-  // Fill text/number fields
-  const fieldMap = { ptname:'ptname', ptmrn:'ptmrn', ptmd:'ptmd', sbp:'sbp', dbp:'dbp', hr:'hr', age:'age', creat:'creat', egfr:'egfr', acr:'acr', tc:'tc', hdl:'hdl' };
-  for (const [key, id] of Object.entries(fieldMap)) {
-    if (e[key]) { const el = document.getElementById(id); if (el) { el.value = e[key]; el.style.background = '#EAF3DE'; } }
-  }
-
-  // Fill selects
-  if (e.sex) { const el = document.getElementById('sex'); if (el) { el.value = e.sex; el.style.background = '#EAF3DE'; } }
-  if (e.race) { const el = document.getElementById('race'); if (el) { el.value = e.race; el.style.background = '#EAF3DE'; } }
-  if (e.smoke) { const el = document.getElementById('smoke'); if (el) { el.value = e.smoke; el.style.background = '#EAF3DE'; } }
-  if (e.uninsured) { const el = document.getElementById('ins'); if (el) { el.value = 'uninsured'; el.style.background = '#EAF3DE'; } }
-
-  // Booleans
-  for (const id of ['dm_risk','statin','aspirin']) {
-    if (e[id]) { const el = document.getElementById(id); if (el) el.checked = true; }
-  }
-  for (const id of ['lvh','retino','prevmi']) {
-    if (e[id]) { const el = document.getElementById(id); if (el) { el.value = 'yes'; el.style.background = '#EAF3DE'; } }
-  }
-
-  // Comorbidities
-  for (const val of (e.comorbidities || [])) {
-    const el = document.querySelector(`.com[value="${val}"]`);
-    if (el) { el.checked = true; el.closest('.cb').style.background = '#EAF3DE'; }
-  }
-
-  // Contraindications
-  for (const val of (e.contraindications || [])) {
-    const el = document.querySelector(`.ci[value="${val}"]`);
-    if (el) { el.checked = true; el.closest('.cb').style.background = '#EAF3DE'; }
-  }
-
-  // Live BP stage update
-  liveStage();
-
-  // Missing fields prompt
-  const missing = result.missing || [];
-  const missingBox = document.getElementById('missing-box');
-  if (missing.length) {
-    missingBox.style.display = 'block';
-    missingBox.innerHTML = `<div class="alert al-warn" style="margin-top:0"><strong>Still needed:</strong> ${missing.join(', ')}. Please fill these in the form below.</div>`;
-  } else {
-    missingBox.style.display = 'none';
-  }
-
-  const filled = Object.values(e).filter(v => v !== null && v !== '' && v !== false && !(Array.isArray(v) && !v.length)).length;
-  document.getElementById('voice-status').textContent = `Done — ${filled} fields populated. Green highlights show auto-filled values.`;
-}
 
 function generate() {
   const sbp=+document.getElementById('sbp').value, dbp=+document.getElementById('dbp').value;
@@ -628,45 +377,39 @@ function generate() {
   const allRec=[...t1,...t2,...t3];
   const ixFound=INTERACTIONS.filter(ix=>ix.drugs.every(d=>allRec.includes(d)));
 
-  // Summary card
   const dt=new Date().toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'});
-  const sumItems=[['Patient',ptname||'(not provided)'],['MRN',ptmrn||'(not provided)'],['Provider',ptmd||'(not provided)'],['BP / Stage',`${sbp}/${dbp} mmHg — ${stage.lbl}`],['Age / Sex / Race',`${age||'?'}y / ${sex||'?'} / ${race||'?'}`],['eGFR',egfr?egfr+' mL/min':'Not calculated'],['ACR',acr?acr+' mg/g':'Not provided'],['Insurance',uninsured?'Uninsured':'Insured']];
-  document.getElementById('sum-card').innerHTML=`<div class="card"><div class="sec">Patient Summary — ${dt}</div><div class="sum-grid">${sumItems.map(([l,v])=>`<div class="sum-item"><div class="sum-label">${l}</div><div class="sum-val">${v}</div></div>`).join('')}</div></div>`;
+  const sumItems=[['Patient',ptname||'(not provided)'],['MRN',ptmrn||'(not provided)'],['Provider',ptmd||'(not provided)'],['BP / Stage',`${sbp}/${dbp} mmHg - ${stage.lbl}`],['Age / Sex / Race',`${age||'?'}y / ${sex||'?'} / ${race||'?'}`],['eGFR',egfr?egfr+' mL/min':'Not calculated'],['ACR',acr?acr+' mg/g':'Not provided'],['Insurance',uninsured?'Uninsured':'Insured']];
+  document.getElementById('sum-card').innerHTML=`<div class="card"><div class="sec">Patient Summary - ${dt}</div><div class="sum-grid">${sumItems.map(([l,v])=>`<div class="sum-item"><div class="sum-label">${l}</div><div class="sum-val">${v}</div></div>`).join('')}</div></div>`;
 
-  // Risk
   const ac=ascvd!==null?(ascvd>=20?'#A32D2D':ascvd>=7.5?'#854F0B':'#3B6D11'):'#888780';
   const ec=egfr?(egfr>=60?'#3B6D11':egfr>=30?'#854F0B':'#A32D2D'):'#888780';
   let rH=`<div class="sec">Risk & Metabolic Summary</div><div class="risk-row">`;
   rH+=`<div class="rcard"><div class="rv" style="color:${stage.color}">${sbp}/${dbp}</div><div class="rl">${stage.lbl}</div></div>`;
-  rH+=`<div class="rcard"><div class="rv" style="color:${ec}">${egfr||'—'}</div><div class="rl">eGFR mL/min/1.73m²</div></div>`;
-  rH+=`<div class="rcard">${ascvd!==null?`<div style="display:flex;justify-content:center">${drawGauge(ascvd,ac)}</div><div class="rl">${ascvdCat(ascvd)}</div>`:`<div class="rv" style="color:#888780">—</div><div class="rl">ASCVD (incomplete data)</div>`}</div>`;
+  rH+=`<div class="rcard"><div class="rv" style="color:${ec}">${egfr||'--'}</div><div class="rl">eGFR mL/min/1.73m2</div></div>`;
+  rH+=`<div class="rcard">${ascvd!==null?`<div style="display:flex;justify-content:center">${drawGauge(ascvd,ac)}</div><div class="rl">${ascvdCat(ascvd)}</div>`:`<div class="rv" style="color:#888780">--</div><div class="rl">ASCVD (incomplete data)</div>`}</div>`;
   rH+=`</div>`;
-  if(ascvd!==null) rH+=`<div class="alert al-info" style="margin-top:8px">10-year ASCVD risk: <strong>${ascvd}%</strong> — ${ascvdCat(ascvd)}. ${ascvd>=7.5?'Statin therapy indicated if not already prescribed.':'Lifestyle modification important even at lower risk.'}</div>`;
+  if(ascvd!==null) rH+=`<div class="alert al-info" style="margin-top:8px">10-year ASCVD risk: <strong>${ascvd}%</strong> - ${ascvdCat(ascvd)}. ${ascvd>=7.5?'Statin therapy indicated if not already prescribed.':'Lifestyle modification important even at lower risk.'}</div>`;
   document.getElementById('risk-section').innerHTML=rH;
 
-  // Organ damage
   let odItems=[];
-  if(egfr){const c=egfr>=60?'#3B6D11':egfr>=30?'#854F0B':'#A32D2D';const st=egfr>=90?'G1 (≥90)':egfr>=60?'G2 (60–89)':egfr>=45?'G3a (45–59)':egfr>=30?'G3b (30–44)':egfr>=15?'G4 (15–29)':'G5 (<15)';odItems.push({l:'eGFR — CKD Stage',v:`${egfr} mL/min — ${st}`,c});}
-  if(acr){const c=acr<30?'#3B6D11':acr<300?'#854F0B':'#A32D2D';const st=acr<30?'A1 (normal)':acr<300?'A2 (moderately increased)':'A3 (severely increased)';odItems.push({l:'Urine ACR',v:`${acr} mg/g — ${st}`,c});}
-  if(lvh)odItems.push({l:'LVH',v:'Present — end-organ damage',c:'#A32D2D'});
+  if(egfr){const c=egfr>=60?'#3B6D11':egfr>=30?'#854F0B':'#A32D2D';const st=egfr>=90?'G1 (>=90)':egfr>=60?'G2 (60-89)':egfr>=45?'G3a (45-59)':egfr>=30?'G3b (30-44)':egfr>=15?'G4 (15-29)':'G5 (<15)';odItems.push({l:'eGFR - CKD Stage',v:`${egfr} mL/min - ${st}`,c});}
+  if(acr){const c=acr<30?'#3B6D11':acr<300?'#854F0B':'#A32D2D';const st=acr<30?'A1 (normal)':acr<300?'A2 (moderately increased)':'A3 (severely increased)';odItems.push({l:'Urine ACR',v:`${acr} mg/g - ${st}`,c});}
+  if(lvh)odItems.push({l:'LVH',v:'Present - end-organ damage',c:'#A32D2D'});
   if(retino)odItems.push({l:'Hypertensive Retinopathy',v:'Present',c:'#A32D2D'});
-  if(prevmi)odItems.push({l:'Prior MI / Revascularization',v:'Yes — high CV risk',c:'#A32D2D'});
+  if(prevmi)odItems.push({l:'Prior MI / Revascularization',v:'Yes - high CV risk',c:'#A32D2D'});
   document.getElementById('od-section').innerHTML=odItems.length?`<div class="card"><div class="sec">Target Organ Damage</div><div class="od-grid">${odItems.map(o=>`<div class="od-item"><div class="od-label">${o.l}</div><div class="od-val" style="color:${o.c}">${o.v}</div></div>`).join('')}</div></div>`:'';
 
-  // Interactions
   document.getElementById('ix-section').innerHTML=ixFound.length?`<div class="card"><div class="sec">Drug Interaction Alerts</div><div class="ix-list">${ixFound.map(ix=>`<div class="ix-${ix.sev}"><strong>${ix.sev.toUpperCase()} SEVERITY:</strong> ${ix.msg}</div>`).join('')}</div></div>`:'';
 
-  // Alerts
   let aH='';
-  if(stage.code==='crisis')aH+=`<div class="alert al-danger"><strong>Hypertensive Crisis (${sbp}/${dbp} mmHg):</strong> Evaluate immediately for end-organ damage (troponin, BMP, UA, ECG, fundoscopy). Hypertensive emergency — IV agents required (nicardipine, labetalol, clevidipine). Reduce MAP no more than 25% in first hour.</div>`;
-  if(stage.code==='s2'||stage.code==='s2hi')aH+=`<div class="alert al-info"><strong>Stage 2 Hypertension:</strong> ACC/AHA 2017 recommends initiating combination therapy with 2 agents from different classes simultaneously (e.g., ACEi/ARB + thiazide, or ACEi/ARB + CCB).</div>`;
-  if(stage.code==='elevated'||stage.code==='normal')aH+=`<div class="alert al-ok"><strong>${stage.lbl} (${sbp}/${dbp}):</strong> Pharmacologic therapy not indicated in most patients. Recommend lifestyle: DASH diet, Na+ &lt;2.3 g/day, weight loss, aerobic exercise ≥90 min/week, alcohol limitation.</div>`;
-  if(egfr&&egfr<30)aH+=`<div class="alert al-warn">eGFR ${egfr} mL/min — avoid potassium-sparing agents. Nephrology co-management recommended. Adjust renally-cleared medications.</div>`;
+  if(stage.code==='crisis')aH+=`<div class="alert al-danger"><strong>Hypertensive Crisis (${sbp}/${dbp} mmHg):</strong> Evaluate immediately for end-organ damage. If hypertensive emergency - IV agents required (nicardipine, labetalol, clevidipine). Reduce MAP no more than 25% in first hour.</div>`;
+  if(stage.code==='s2'||stage.code==='s2hi')aH+=`<div class="alert al-info"><strong>Stage 2 Hypertension:</strong> ACC/AHA 2017 recommends initiating combination therapy with 2 agents from different classes simultaneously.</div>`;
+  if(stage.code==='elevated'||stage.code==='normal')aH+=`<div class="alert al-ok"><strong>${stage.lbl} (${sbp}/${dbp}):</strong> Pharmacologic therapy not indicated in most patients. Recommend lifestyle: DASH diet, Na+ less than 2.3 g/day, weight loss, aerobic exercise 90+ min/week.</div>`;
+  if(egfr&&egfr<30)aH+=`<div class="alert al-warn">eGFR ${egfr} mL/min - avoid potassium-sparing agents. Nephrology co-management recommended.</div>`;
   if(isBlack&&!isPregnant)aH+=`<div class="alert al-info">For Black patients: thiazides and CCBs are preferred first-line agents. ACEi/ARB monotherapy is less effective as initial therapy unless CKD, diabetes, or HF is present.</div>`;
   document.getElementById('alerts').innerHTML=aH;
 
-  // Tiers
-  function dCard(k){const d=DRUGS[k];return`<div class="drow"><div class="dname">${d.name}</div><div class="dcls">${d.cls}</div><div class="tags">${d.labs.map(l=>`<span class="tag tlab">Lab: ${l}</span>`).join('')}${uninsured&&d.cheap?'<span class="tag tchp">Generic — low cost</span>':''}${uninsured&&!d.cheap&&d.cheapNote?`<span class="tag tnote">Cost: ${d.cheapNote}</span>`:''}</div><div class="dnote">${d.notes}</div></div>`;}
+  function dCard(k){const d=DRUGS[k];return`<div class="drow"><div class="dname">${d.name}</div><div class="dcls">${d.cls}</div><div class="tags">${d.labs.map(l=>`<span class="tag tlab">Lab: ${l}</span>`).join('')}${uninsured&&d.cheap?'<span class="tag tchp">Generic - low cost</span>':''}${uninsured&&!d.cheap&&d.cheapNote?`<span class="tag tnote">Cost: ${d.cheapNote}</span>`:''}</div><div class="dnote">${d.notes}</div></div>`;}
   function tBlock(lbl,drugs,cls){if(!drugs.length)return'';return`<div class="tier-wrap ${cls}"><div class="tier-hd">${lbl}</div>${drugs.map(dCard).join('')}</div>`;}
   let tH=tBlock('First-Line Agents',t1,'t1')+tBlock('Second-Line Agents',t2,'t2')+(t3.length?tBlock('Third-Line / Add-On Agents',t3,'t3'):'');
   if(!tH)tH=`<div class="card" style="text-align:center;padding:2rem;color:#888780">No agents recommended based on current inputs. Reassess contraindications.</div>`;
@@ -689,34 +432,22 @@ async function exportPDF(){
   const s=window._pdf; if(!s)return;
   const btn=document.getElementById('pdf-btn');
   btn.disabled=true;
-  document.getElementById('pdf-status').textContent='Generating clinical narrative via AI…';
+  document.getElementById('pdf-status').textContent='Generating clinical narrative...';
   let ai=null;
   try{
     const resp=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
-      headers:{'Content-Type':'application/json'},
+      headers:{'Content-Type':'application/json','x-api-key':localStorage.getItem('htn_api_key')||'','anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
       body:JSON.stringify({
         model:'claude-sonnet-4-20250514',max_tokens:1000,
-        messages:[{role:'user',content:`Generate a clinical summary JSON for a hypertension report. Return ONLY valid JSON, no markdown.
-
-Patient: ${s.ptname||'Anonymous'}, age=${s.age||'N/A'}, sex=${s.sex||'N/A'}, race=${s.race||'N/A'}
-BP: ${s.sbp}/${s.dbp} mmHg — ${s.stage.lbl}
-ASCVD 10-yr: ${s.ascvd!==null?s.ascvd+'%':'Not calculated'}
-eGFR: ${s.egfr?s.egfr+' mL/min':'N/A'}, ACR: ${s.acr?s.acr+' mg/g':'N/A'}
-Comorbidities: ${s.comorbid.join(', ')||'None'}
-Contraindications: ${s.ciList.join(', ')||'None'}
-First-line: ${s.t1.map(k=>DRUGS[k].name).join('; ')||'None'}
-Second-line: ${s.t2.map(k=>DRUGS[k].name).join('; ')||'None'}
-Interactions: ${s.ixFound.map(x=>x.sev.toUpperCase()+': '+x.drugs.join('+')).join('; ')||'None'}
-
-Return JSON keys: patientSummary, riskAssessment, treatmentRationale, monitoringPlan, lifestyleRecommendations (array of 4 strings), followUp.`}]
+        messages:[{role:'user',content:`Generate a clinical summary JSON for a hypertension report. Return ONLY valid JSON, no markdown.\n\nPatient: ${s.ptname||'Anonymous'}, age=${s.age||'N/A'}, sex=${s.sex||'N/A'}, race=${s.race||'N/A'}\nBP: ${s.sbp}/${s.dbp} mmHg - ${s.stage.lbl}\nASCVD 10-yr: ${s.ascvd!==null?s.ascvd+'%':'Not calculated'}\neGFR: ${s.egfr?s.egfr+' mL/min':'N/A'}, ACR: ${s.acr?s.acr+' mg/g':'N/A'}\nComorbidities: ${s.comorbid.join(', ')||'None'}\nContraindications: ${s.ciList.join(', ')||'None'}\nFirst-line: ${s.t1.map(k=>DRUGS[k].name).join('; ')||'None'}\nSecond-line: ${s.t2.map(k=>DRUGS[k].name).join('; ')||'None'}\nInteractions: ${s.ixFound.map(x=>x.sev.toUpperCase()+': '+x.drugs.join('+')).join('; ')||'None'}\n\nReturn JSON keys: patientSummary, riskAssessment, treatmentRationale, monitoringPlan, lifestyleRecommendations (array of 4 strings), followUp.`}]
       })
     });
     const data=await resp.json();
     let txt=data.content.filter(b=>b.type==='text').map(b=>b.text).join('').replace(/```json|```/g,'').trim();
     ai=JSON.parse(txt);
-    document.getElementById('pdf-status').textContent='Building PDF…';
-  }catch(e){ document.getElementById('pdf-status').textContent='Building PDF (AI narrative unavailable)…'; }
+    document.getElementById('pdf-status').textContent='Building PDF...';
+  }catch(e){ document.getElementById('pdf-status').textContent='Building PDF (AI narrative unavailable)...'; }
   buildPDF(s,ai);
   document.getElementById('pdf-status').textContent='PDF downloaded successfully.';
   btn.disabled=false;
@@ -735,34 +466,24 @@ function buildPDF(s,ai){
     for(const w of words){if((ln+' '+w).length>lim){cur.push(`BT /F2 ${size||9} Tf ${x} ${y} Td (${esc(ln.trim())}) Tj ET`);nl();chk();ln=w;}else ln+=' '+w;}
     if(ln.trim()){cur.push(`BT /F2 ${size||9} Tf ${x} ${y} Td (${esc(ln.trim())}) Tj ET`);nl();}
   }
-
-  // Title block
   txt('HYPERTENSION TREATMENT REPORT',16,true);nl(1.5);
   const dt=new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
-  txt(`Generated: ${dt}   |   Educational use only — not a substitute for clinical judgment`,9,false);nl(0.5);
+  txt(`Generated: ${dt}   |   Educational use only`,9,false);nl(0.5);
   rule();nl(1.5);
-
-  // Patient ID
   txt('PATIENT IDENTIFICATION',11,true);nl(1.3);
   wrap(`Patient: ${s.ptname||'(not provided)'}   MRN: ${s.ptmrn||'(not provided)'}   Provider: ${s.ptmd||'(not provided)'}`,0,10);
   wrap(`Age: ${s.age||'N/A'}   Sex: ${s.sex||'N/A'}   Race: ${s.race||'N/A'}   Insurance: ${s.uninsured?'Uninsured':'Insured'}`,0,10);
   wrap(`BP: ${s.sbp}/${s.dbp} mmHg${s.hr?'   HR: '+s.hr+' bpm':''}   Classification: ${s.stage.lbl}`,0,10);
   nl(0.5);
-
-  // Risk
   txt('RISK ASSESSMENT',11,true);nl(1.3);
-  wrap(`10-Year ASCVD Risk: ${s.ascvd!==null?s.ascvd+'% ('+ascvdCat(s.ascvd)+')':'Not calculated — lipid data not provided'}`,0,10);
+  wrap(`10-Year ASCVD Risk: ${s.ascvd!==null?s.ascvd+'% ('+ascvdCat(s.ascvd)+')':'Not calculated'}`,0,10);
   wrap(`eGFR: ${s.egfr?s.egfr+' mL/min/1.73m2':'Not calculated'}   Urine ACR: ${s.acr?s.acr+' mg/g':'Not provided'}`,0,10);
-  wrap(`LVH: ${s.lvh?'Present (end-organ damage)':'No/Unknown'}   Retinopathy: ${s.retino?'Present':'No/Unknown'}   Prior MI: ${s.prevmi?'Yes':'No'}`,0,10);
+  wrap(`LVH: ${s.lvh?'Present':'No/Unknown'}   Retinopathy: ${s.retino?'Present':'No/Unknown'}   Prior MI: ${s.prevmi?'Yes':'No'}`,0,10);
   nl(0.5);chk();
-
-  // Comorbidities
   txt('COMORBIDITIES & CONTRAINDICATIONS',11,true);nl(1.3);
   wrap(`Comorbidities: ${s.comorbid.join(', ')||'None'}`,0,10);
-  wrap(`Contraindications/Allergies: ${s.ciList.join(', ')||'None'}`,0,10);
+  wrap(`Contraindications: ${s.ciList.join(', ')||'None'}`,0,10);
   nl(0.8);chk();
-
-  // Interactions
   if(s.ixFound.length){
     txt('DRUG INTERACTION ALERTS',11,true);nl(1.3);
     for(const ix of s.ixFound){
@@ -771,8 +492,6 @@ function buildPDF(s,ai){
     }
     nl(0.4);
   }
-
-  // Treatment tiers
   txt('TREATMENT RECOMMENDATIONS',11,true);nl(1.3);
   for(const [tlbl,drugs] of [['FIRST-LINE AGENTS',s.t1],['SECOND-LINE AGENTS',s.t2],['THIRD-LINE / ADD-ON AGENTS',s.t3]]){
     if(!drugs.length)continue;
@@ -783,13 +502,11 @@ function buildPDF(s,ai){
       txt(`Class: ${d.cls}`,9,false,4);nl();
       wrap(`Notes: ${d.notes}`,8,9);
       wrap(`Required labs: ${d.labs.join(' | ')}`,8,9);
-      if(s.uninsured) wrap(`Cost: ${d.cheap?'Generic available — low cost':(d.cheapNote||'Brand pricing may apply')}`,8,9);
+      if(s.uninsured) wrap(`Cost: ${d.cheap?'Generic available - low cost':(d.cheapNote||'Brand pricing may apply')}`,8,9);
       nl(0.3);chk();
     }
     nl(0.4);
   }
-
-  // AI narrative
   if(ai){
     chk(80);
     txt('CLINICAL NARRATIVE',11,true);nl(1.3);
@@ -803,14 +520,9 @@ function buildPDF(s,ai){
       for(const l of ai.lifestyleRecommendations){wrap(`- ${l}`,4,9);chk();}
     }
   }
-
-  // Disclaimer
   nl(1);chk(40);rule();nl(0.7);
-  wrap('DISCLAIMER: This tool is for educational purposes only and does not constitute medical advice. All clinical decisions must be made by a licensed healthcare professional using complete patient context and current clinical guidelines.',0,8);
-
+  wrap('DISCLAIMER: For educational purposes only. Does not constitute medical advice. All clinical decisions must be made by a licensed healthcare professional.',0,8);
   allPages.push([...cur]);
-
-  // Assemble PDF bytes
   let pdf='%PDF-1.4\n';
   const xref=[];
   function obj(id,body){xref[id]=pdf.length;pdf+=`${id} 0 obj\n${body}\nendobj\n`;}
@@ -831,6 +543,11 @@ function buildPDF(s,ai){
   a.href=URL.createObjectURL(new Blob([pdf],{type:'application/pdf'}));
   a.download=fname; a.click();
 }
+
+window.addEventListener('DOMContentLoaded',()=>{
+  const k=localStorage.getItem('htn_api_key');
+  if(k){const el=document.getElementById('api-key');if(el)el.value=k;}
+});
 </script>
 </body>
 </html>
