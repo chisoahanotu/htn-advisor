@@ -1,0 +1,57 @@
+name: Deploy moving-sale to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths: ['moving-sale/**', '.github/workflows/deploy-pages.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: moving-sale/package-lock.json
+      - name: Build
+        working-directory: moving-sale
+        env:
+          # Repository → Settings → Secrets and variables → Actions → Variables.
+          # The anon key is a public client credential (RLS enforces security).
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
+          VITE_SITE_URL: ${{ vars.VITE_SITE_URL }}
+          VITE_BASE: ${{ vars.VITE_BASE || '/htn-advisor/' }}
+          VITE_POSTHOG_KEY: ${{ vars.VITE_POSTHOG_KEY }}
+        run: |
+          npm ci
+          npm run build
+          # SPA fallback: unknown paths serve the app shell
+          cp dist/index.html dist/404.html
+          # Custom domain (set VITE_SITE_URL + VITE_BASE=/ when using one)
+          if [ -n "${{ vars.PAGES_CUSTOM_DOMAIN }}" ]; then
+            echo "${{ vars.PAGES_CUSTOM_DOMAIN }}" > dist/CNAME
+          fi
+      - uses: actions/configure-pages@v5
+        with:
+          enablement: true
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: moving-sale/dist
+      - id: deployment
+        uses: actions/deploy-pages@v4

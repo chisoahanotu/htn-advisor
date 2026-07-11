@@ -6,8 +6,10 @@ import { Spinner, useToast } from '../../components/ui.jsx'
 import QRCodeBox from '../../components/QRCode.jsx'
 
 // Site root for the master catalog QR + share links. Override with
-// VITE_SITE_URL in production if serving behind a custom domain.
-const SITE_ROOT = (import.meta.env.VITE_SITE_URL || window.location.origin).replace(/\/$/, '') + '/'
+// VITE_SITE_URL in production if serving behind a custom domain; otherwise
+// derives from the origin + base path (handles GitHub Pages subpaths).
+const SITE_ROOT =
+  (import.meta.env.VITE_SITE_URL || window.location.origin + import.meta.env.BASE_URL).replace(/\/$/, '') + '/'
 const itemUrl = (slug) => `${SITE_ROOT}item/${slug}`
 
 function movingTag(count) {
