@@ -31,13 +31,11 @@ jobs:
       - name: Build
         working-directory: moving-sale
         env:
-          # Repository → Settings → Secrets and variables → Actions → Variables.
-          # The anon key is a public client credential (RLS enforces security).
-          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
-          VITE_SITE_URL: ${{ vars.VITE_SITE_URL }}
+          # Client config lives in the committed moving-sale/.env.production
+          # (public values; RLS enforces security). Do NOT export empty VITE_*
+          # vars here — an empty env var overrides the .env file and silently
+          # produces a mock-mode build.
           VITE_BASE: ${{ vars.VITE_BASE || '/' }}
-          VITE_POSTHOG_KEY: ${{ vars.VITE_POSTHOG_KEY }}
         run: |
           npm ci
           npm run build
@@ -45,6 +43,8 @@ jobs:
           cp dist/index.html dist/404.html
           # Custom domain — must match Settings -> Pages -> Custom domain
           echo "${{ vars.PAGES_CUSTOM_DOMAIN || 'avalonestatesale.com' }}" > dist/CNAME
+          # Keep the legacy hypertension app reachable at /htn/
+          cp -r ../htn dist/htn
       - name: Ensure Pages builds from this workflow (not the legacy branch build)
         uses: actions/github-script@v7
         with:
