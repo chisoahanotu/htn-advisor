@@ -65,6 +65,9 @@ function Login() {
             Prototype login — use <code>{api.demoPasswordHint}</code>. Real app uses Supabase Auth.
           </p>
         )}
+        <p className="hint" style={{ marginTop: 10, opacity: 0.6 }}>
+          build {__BUILD_ID__} · {api.backendName}
+        </p>
       </div>
     </div>
   )
