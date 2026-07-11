@@ -113,6 +113,8 @@ export const api = {
       delivery_option: data.delivery_option || 'none',
       delivery_fee: data.delivery_fee ?? null,
       status: data.status || 'available',
+      photo_group_id: data.photo_group_id ?? null,
+      photo_pos: data.photo_pos ?? null,
     }
     for (;;) {
       const { data: row, error } = await client()
@@ -358,10 +360,11 @@ export const api = {
   },
 
   // ---- AI intake (Anthropic vision via Edge Function) ----
+  // One photo may contain several sellable items — returns one draft per item.
   async draftListing(file) {
     const [photo] = await api.uploadPhotos([file])
     const { data, error } = await client().functions.invoke('ai-intake', { body: { image_url: photo } })
     if (error) throw error
-    return { ...data, photo }
+    return { photo, items: data.items || [] }
   },
 }

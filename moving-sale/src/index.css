@@ -186,3 +186,21 @@ img { max-width: 100%; display: block; }
 .thread-msg-buyer { align-self: flex-end; background: var(--rust); color: #fff; }
 .thread-msg-buyer .thread-msg-meta { color: rgba(255, 255, 255, 0.75); }
 .thread-msg-seller { align-self: flex-start; background: var(--card); border: 1px solid var(--line); }
+
+/* ---- price stamps on gallery photos (one photo, many items) ---- */
+.price-stamp { position: absolute; background: var(--ink, #1a1a1a); color: #fff; font-weight: 800; font-size: 13px; padding: 3px 9px; border-radius: 999px; box-shadow: 0 2px 8px rgba(0,0,0,0.35); border: 2px solid #fff; pointer-events: none; white-space: nowrap; z-index: 2; }
+.price-stamp.is-sold { background: #8a8a8a; }
+.price-stamp.is-pending { background: #b8860b; }
+.tile.is-sold .tile-photo img { filter: grayscale(0.6); }
+
+/* ---- multi-item photo page ---- */
+.group-photo { position: relative; margin-top: 14px; border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+.group-photo img { width: 100%; display: block; }
+.group-item { padding: 16px 18px; margin-bottom: 12px; }
+
+/* ---- bulk intake draft rows ---- */
+.draft-row { border-top: 1px solid var(--line); padding: 12px 0 4px; }
+.draft-row.added { display: flex; align-items: center; gap: 8px; padding: 10px 0; color: var(--ink2); }
+.draft-row.added .check { color: #2e7d32; font-weight: 800; }
+.draft-grid { display: grid; gap: 0 12px; grid-template-areas: "title title price" "size dims dims" "desc desc desc"; grid-template-columns: 1fr 1fr 110px; }
+@media (max-width: 640px) { .draft-grid { grid-template-areas: "title" "price" "size" "dims" "desc"; grid-template-columns: 1fr; } }

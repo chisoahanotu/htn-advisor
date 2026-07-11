@@ -44,7 +44,7 @@ function Confirm({ text }) {
   )
 }
 
-function OfferModal({ item, onClose }) {
+export function OfferModal({ item, onClose }) {
   const { data: settings } = useQuery(() => api.getSettings())
   const [form, setForm] = useState({ offer_price: '', buyer_name: '', buyer_contact: '', message: '', is_bundle: false })
   const [sent, setSent] = useState(false)
@@ -130,7 +130,7 @@ function OfferModal({ item, onClose }) {
   )
 }
 
-function BookingModal({ item, onClose }) {
+export function BookingModal({ item, onClose }) {
   const { data: windows, loading } = useQuery(() => api.listWindows())
   const [form, setForm] = useState({ window_id: '', buyer_name: '', buyer_contact: '' })
   const [sent, setSent] = useState(false)

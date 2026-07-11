@@ -27,7 +27,7 @@ export function daysUntil(dateStr) {
 export const DELIVERY_LABELS = {
   none: 'Pickup only',
   can_help_load: 'Pickup — I can help load',
-  local_delivery: 'Local delivery available',
+  local_delivery: 'Drop-off available',
 }
 
 export const STATUS_LABELS = {

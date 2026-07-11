@@ -5,7 +5,7 @@ import { Modal } from './ui.jsx'
 const DELIVERY_OPTS = [
   ['none', 'Pickup only'],
   ['can_help_load', 'Pickup — I can help load'],
-  ['local_delivery', 'Local delivery available'],
+  ['local_delivery', 'Drop-off available'],
 ]
 const STATUS_OPTS = ['available', 'pending', 'sold']
 const CONDITIONS = ['Like New', 'Good', 'Fair', 'For Parts']
@@ -44,6 +44,9 @@ export default function ItemForm({ initial = {}, onClose, onSaved }) {
       ...form,
       price: Number(form.price) || 0,
       delivery_fee: form.delivery_option === 'local_delivery' && form.delivery_fee !== '' ? Number(form.delivery_fee) : null,
+      // Multi-item photos: carried from the AI draft, not user-editable.
+      ...(initial.photo_group_id ? { photo_group_id: initial.photo_group_id } : {}),
+      ...(initial.photo_pos ? { photo_pos: initial.photo_pos } : {}),
     }
     if (editing) await api.updateItem(initial.id, payload)
     else await api.createItem(payload)

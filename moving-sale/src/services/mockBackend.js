@@ -176,6 +176,8 @@ export const api = {
       delivery_option: data.delivery_option || 'none',
       delivery_fee: data.delivery_fee ?? null,
       status: data.status || 'available',
+      photo_group_id: data.photo_group_id ?? null,
+      photo_pos: data.photo_pos ?? null,
       created_at: now,
       updated_at: now,
     }
@@ -395,14 +397,32 @@ export const api = {
         d: 'Gently used household item in good condition. See photos for detail.',
       }
     const photo = placeholderPhoto(fileName + Math.random(), g.t)
-    return {
-      photo,
+    // Mirrors the production shape: one photo can yield several item drafts.
+    // Filenames containing "multi" simulate a two-item photo.
+    const first = {
       title: g.t,
       category: g.c,
       condition: g.cond,
       description: g.d,
-      suggested_price_range: { low: g.lo, high: g.hi },
+      suggested_price: Math.round((g.lo + g.hi) / 2),
+      size_class: /furniture|outdoor/i.test(g.c) ? 'large' : 'small',
+      position: { x: 0.35, y: 0.55 },
     }
+    const items = /multi/.test(name)
+      ? [
+          first,
+          {
+            title: 'Table Lamp',
+            category: 'Home',
+            condition: 'Good',
+            description: 'Compact table lamp with a warm shade, spotted in the same photo.',
+            suggested_price: 25,
+            size_class: 'small',
+            position: { x: 0.75, y: 0.4 },
+          },
+        ]
+      : [first]
+    return { photo, items }
   },
 }
 
