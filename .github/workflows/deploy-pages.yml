@@ -47,6 +47,20 @@ jobs:
           if [ -n "${{ vars.PAGES_CUSTOM_DOMAIN }}" ]; then
             echo "${{ vars.PAGES_CUSTOM_DOMAIN }}" > dist/CNAME
           fi
+      - name: Ensure Pages builds from this workflow (not the legacy branch build)
+        uses: actions/github-script@v7
+        with:
+          script: |
+            try {
+              await github.request('PUT /repos/{owner}/{repo}/pages', {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                build_type: 'workflow',
+              })
+              core.info('Pages build_type set to workflow')
+            } catch (e) {
+              core.warning(`Could not update Pages config (${e.status}): ${e.message}`)
+            }
       - uses: actions/configure-pages@v5
         with:
           enablement: true
