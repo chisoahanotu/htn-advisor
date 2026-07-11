@@ -1,0 +1,14 @@
+# Supabase CLI config for local dev / deploys.
+project_id = "moving-sale"
+
+[functions.submit]
+# Called by anonymous buyers with the anon key (functions.invoke sends it).
+verify_jwt = true
+
+[functions.ai-intake]
+# JWT checked in-function against Supabase Auth (admin only).
+verify_jwt = true
+
+[functions.telegram-webhook]
+# Telegram can't send Supabase JWTs; authenticated via secret_token header.
+verify_jwt = false

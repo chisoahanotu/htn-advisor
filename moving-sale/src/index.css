@@ -164,3 +164,25 @@ img { max-width: 100%; display: block; }
   .two-col { grid-template-columns: 1fr; }
   .brand { font-size: 18px; }
 }
+
+/* ---- phase 2 ---- */
+
+/* was-price strikethrough next to the current price */
+.was-price { font-size: 15px; font-weight: 600; color: var(--ink3); text-decoration: line-through; margin-left: 10px; }
+.price-drop-hint { margin: 2px 0 14px; }
+
+/* bundle discount banner on the storefront */
+.bundle-banner { margin: 12px 0 0; background: var(--green-light); color: var(--green); }
+
+/* offer negotiation thread */
+.thread-banner { margin-top: 14px; padding: 10px 14px; border-radius: var(--radius-sm); font-size: 14px; font-weight: 600; }
+.thread-banner-accepted { background: var(--green-light); color: var(--green); }
+.thread-banner-declined { background: var(--line); color: var(--ink3); }
+
+.thread-list { display: flex; flex-direction: column; gap: 10px; }
+.thread-msg { max-width: 80%; padding: 10px 14px; border-radius: var(--radius-sm); background: var(--rust-light); }
+.thread-msg-body { font-size: 14px; line-height: 1.5; }
+.thread-msg-meta { font-size: 11px; color: var(--ink3); margin-top: 4px; }
+.thread-msg-buyer { align-self: flex-end; background: var(--rust); color: #fff; }
+.thread-msg-buyer .thread-msg-meta { color: rgba(255, 255, 255, 0.75); }
+.thread-msg-seller { align-self: flex-start; background: var(--card); border: 1px solid var(--line); }

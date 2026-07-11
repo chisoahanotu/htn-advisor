@@ -17,10 +17,11 @@ import {
   SEED_OFFERS,
   SEED_BOOKINGS,
   SEED_SETTINGS,
+  SEED_MESSAGES,
 } from './seed.js'
 import { placeholderPhoto } from './placeholder.js'
 
-const STORAGE_KEY = 'moving_sale_db_v1'
+const STORAGE_KEY = 'moving_sale_db_v2'
 const SESSION_KEY = 'moving_sale_admin_session'
 const ADMIN_PASSWORD = 'moveout2026' // prototype only — real app uses Supabase Auth
 
@@ -32,6 +33,7 @@ function freshDb() {
     offers: structuredClone(SEED_OFFERS),
     bookings: structuredClone(SEED_BOOKINGS),
     settings: structuredClone(SEED_SETTINGS),
+    messages: structuredClone(SEED_MESSAGES),
     // Simulated Telegram DMs to the seller, each with inline accept/reject.
     notifications: [
       {
@@ -77,6 +79,15 @@ const delay = (ms = 180) => new Promise((r) => setTimeout(r, ms))
 const uid = (p) => `${p}_${Math.random().toString(36).slice(2, 9)}`
 const clone = (x) => structuredClone(x)
 
+function randomToken() {
+  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+    const arr = new Uint8Array(16)
+    crypto.getRandomValues(arr)
+    return Array.from(arr, (b) => b.toString(16).padStart(2, '0')).join('')
+  }
+  return Math.random().toString(16).slice(2) + Math.random().toString(16).slice(2)
+}
+
 function slugify(text) {
   const base = String(text || 'item')
     .toLowerCase()
@@ -88,8 +99,28 @@ function slugify(text) {
   return slug
 }
 
+// Builds the { offer, messages } payload shared by getThread/adminGetThread.
+function threadPayload(offer) {
+  const item = db.items.find((i) => i.id === offer.item_id)
+  const messages = db.messages
+    .filter((m) => m.offer_id === offer.id)
+    .sort((a, b) => a.created_at.localeCompare(b.created_at))
+  return clone({
+    offer: {
+      id: offer.id,
+      status: offer.status,
+      offer_price: offer.offer_price,
+      item_title: item?.title ?? 'item',
+    },
+    messages,
+  })
+}
+
 // ---- public API -----------------------------------------------------------
 export const api = {
+  backendName: 'mock',
+  authMode: 'password',
+
   subscribe(fn) {
     subscribers.add(fn)
     return () => subscribers.delete(fn)
@@ -104,7 +135,7 @@ export const api = {
   getSession() {
     return sessionStorage.getItem(SESSION_KEY) === 'true'
   },
-  async signIn(password) {
+  async signIn({ email, password } = {}) {
     await delay()
     if (password === ADMIN_PASSWORD) {
       sessionStorage.setItem(SESSION_KEY, 'true')
@@ -137,6 +168,7 @@ export const api = {
       title: data.title || 'Untitled item',
       description: data.description || '',
       price: data.price ?? 0,
+      original_price: data.original_price ?? null,
       dimensions: data.dimensions || '',
       category: data.category || 'Other',
       condition: data.condition || 'Good',
@@ -164,6 +196,13 @@ export const api = {
     db.items = db.items.filter((i) => i.id !== id)
     persist()
   },
+  async uploadPhotos(files) {
+    await delay()
+    const list = files || []
+    return list.map((f) =>
+      placeholderPhoto((f?.name || 'photo') + Math.random(), (f?.name || 'Photo').replace(/\.[^.]+$/, '')),
+    )
+  },
 
   // ---- offers (buyer action -> Telegram) ----
   async listOffers() {
@@ -180,6 +219,8 @@ export const api = {
       buyer_contact: data.buyer_contact,
       offer_price: Number(data.offer_price) || 0,
       message: data.message || '',
+      is_bundle: Boolean(data.is_bundle),
+      thread_token: randomToken(),
       status: 'new',
       created_at: new Date().toISOString(),
     }
@@ -193,7 +234,7 @@ export const api = {
       resolved: false,
     })
     persist()
-    return clone(offer)
+    return { id: offer.id, thread_token: offer.thread_token }
   },
   async resolveOffer(offerId, accept) {
     await delay()
@@ -206,6 +247,50 @@ export const api = {
     }
     resolveNotification('offer', offerId)
     persist()
+  },
+
+  // ---- offer negotiation thread ----
+  async getThread(offerId, token) {
+    await delay()
+    const offer = db.offers.find((o) => o.id === offerId)
+    if (!offer || !token || offer.thread_token !== token) return null
+    return threadPayload(offer)
+  },
+  async postThreadMessage(offerId, token, body) {
+    await delay()
+    const offer = db.offers.find((o) => o.id === offerId)
+    if (!offer || !token || offer.thread_token !== token) return null
+    const msg = {
+      id: uid('msg'),
+      offer_id: offerId,
+      sender: 'buyer',
+      body,
+      created_at: new Date().toISOString(),
+    }
+    db.messages.push(msg)
+    persist()
+    return clone(msg)
+  },
+  async adminGetThread(offerId) {
+    await delay()
+    const offer = db.offers.find((o) => o.id === offerId)
+    if (!offer) return null
+    return threadPayload(offer)
+  },
+  async adminPostMessage(offerId, body) {
+    await delay()
+    const offer = db.offers.find((o) => o.id === offerId)
+    if (!offer) return null
+    const msg = {
+      id: uid('msg'),
+      offer_id: offerId,
+      sender: 'seller',
+      body,
+      created_at: new Date().toISOString(),
+    }
+    db.messages.push(msg)
+    persist()
+    return clone(msg)
   },
 
   // ---- pickup windows ----
@@ -287,9 +372,10 @@ export const api = {
 
   // ---- AI intake (mock Anthropic vision) ----
   // Returns an AI-style draft. Dimensions + final price stay manual per brief.
-  async draftListing(photoName = '') {
+  async draftListing(file) {
     await delay(700) // vision calls are slower
-    const name = photoName.toLowerCase()
+    const fileName = file?.name || ''
+    const name = fileName.toLowerCase()
     const guesses = [
       { m: /(sofa|couch|sectional)/, t: 'Upholstered Sofa', c: 'Furniture', cond: 'Good', lo: 200, hi: 450, d: 'Upholstered sofa in good condition. Comfortable seating with minor signs of use consistent with age.' },
       { m: /(desk|table|dining)/, t: 'Wooden Table', c: 'Furniture', cond: 'Good', lo: 80, hi: 250, d: 'Sturdy wooden table with a warm finish. Surface shows light everyday wear.' },
@@ -308,7 +394,9 @@ export const api = {
         hi: 100,
         d: 'Gently used household item in good condition. See photos for detail.',
       }
+    const photo = placeholderPhoto(fileName + Math.random(), g.t)
     return {
+      photo,
       title: g.t,
       category: g.c,
       condition: g.cond,

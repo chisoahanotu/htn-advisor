@@ -1,6 +1,5 @@
 import { useState } from 'react'
-import { api } from '../services/mockBackend.js'
-import { placeholderPhoto } from '../services/placeholder.js'
+import { api } from '../services/backend.js'
 import { Modal } from './ui.jsx'
 
 const DELIVERY_OPTS = [
@@ -12,7 +11,8 @@ const STATUS_OPTS = ['available', 'pending', 'sold']
 const CONDITIONS = ['Like New', 'Good', 'Fair', 'For Parts']
 
 // Create or edit an item. `initial` may be a full item (edit) or an AI draft
-// (create). Photo upload is simulated — files become inline placeholder images.
+// (create). Photo upload goes through api.uploadPhotos — mock returns
+// placeholder images; supabase uploads to Storage and returns public URLs.
 export default function ItemForm({ initial = {}, onClose, onSaved }) {
   const editing = !!initial.id
   const [form, setForm] = useState({
@@ -30,11 +30,11 @@ export default function ItemForm({ initial = {}, onClose, onSaved }) {
   const [busy, setBusy] = useState(false)
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value })
 
-  // Simulated upload: real app pushes to Supabase Storage and stores URLs.
-  function onFiles(e) {
+  async function onFiles(e) {
     const files = [...e.target.files]
-    const added = files.map((f) => placeholderPhoto(f.name + Math.random(), f.name.replace(/\.[^.]+$/, '')))
-    setForm((f) => ({ ...f, photos: [...f.photos, ...added] }))
+    if (!files.length) return
+    const urls = await api.uploadPhotos(files)
+    setForm((f) => ({ ...f, photos: [...f.photos, ...urls] }))
   }
 
   async function save(e) {
@@ -74,7 +74,7 @@ export default function ItemForm({ initial = {}, onClose, onSaved }) {
             </div>
           )}
           <input type="file" accept="image/*" multiple onChange={onFiles} />
-          <p className="hint">Mobile-friendly upload. Simulated — files become placeholder images.</p>
+          <p className="hint">Mobile-friendly upload. Photos upload automatically as you add them.</p>
         </div>
 
         <div className="field">

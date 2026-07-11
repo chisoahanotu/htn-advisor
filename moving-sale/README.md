@@ -1,86 +1,82 @@
-# Moving Sale Storefront — Phase 1 Prototype
+# Moving Sale Storefront
 
-A front-end prototype (Vite + React) of a single-seller **moving-sale storefront**,
-built from `MOVING_SALE_BRIEF.md`. One public page lists everything for sale;
-buyers browse, make an offer, and book a pickup window — no account needed. A
-single admin manages listings and approves offers/bookings.
+A single-seller **moving-sale storefront** built from `MOVING_SALE_BRIEF.md`.
+One public page lists everything for sale; buyers browse, make offers, message
+the seller, and book pickup windows — no accounts. A single admin manages
+listings (with AI-assisted intake) and approves offers/bookings from Telegram.
 
-> **Prototype scope:** this is the Phase 1 UI running entirely in the browser
-> against a **mock backend** (`src/services/mockBackend.js`). It stands in for the
-> production stack (Supabase Postgres/Storage/Auth, a Telegram Edge Function, and
-> the Anthropic vision intake) so every flow is clickable without any keys or
-> servers. Data persists to `localStorage`. See “Swapping in the real backend”.
+**Stack:** Vite + React frontend (Vercel) · Supabase (Postgres + Storage +
+Auth + Edge Functions) · Telegram bot for approvals · Anthropic vision for
+listing intake · optional Resend (buyer emails) + PostHog (analytics).
+
+## Two modes, one codebase
+
+The UI talks to a service layer (`src/services/backend.js`) with two
+interchangeable implementations:
+
+| Mode | When | Backend |
+|---|---|---|
+| **Demo** | No env vars (default for `npm run dev`) | `mockBackend.js` — in-browser, localStorage, seeded data, admin password `moveout2026` |
+| **Production** | `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` set | `supabaseBackend.js` — real Postgres/Storage/Auth + Edge Functions |
+
+The contract both implement: `docs/BACKEND_API.md`.
 
 ## Run it
 
 ```bash
-cd moving-sale
 npm install
-npm run dev      # http://localhost:5173
+npm run dev        # demo mode at http://localhost:5173
 ```
 
-`npm run build` produces a static bundle in `dist/`; `npm run preview` serves it.
+For production mode locally, copy `.env.example` to `.env.local` and fill in
+the Supabase values.
 
-## Admin login
+## Deploying for real
 
-Open **Seller login** (top right) → password **`moveout2026`** (prototype only).
+Follow **`GO_LIVE.md`** — Supabase project + schema, Telegram bot, Edge
+Function secrets, Vercel. ~30–45 minutes.
 
-## What's implemented (Phase 1)
+## Features
 
-**Public buyer (no login)**
-- Item grid with photo, title, price, dimensions, condition, and prominent
-  **Available / Pending / Sold** badges; sold/pending items stay visible but
-  non-actionable.
-- Persistent **move-out urgency banner** ("Everything must go by {date}").
-- Per-item pages at `#/item/{slug}` with a photo gallery, full info, and **Copy link**.
-- **Make an offer** (price + name + contact + message) and **Request pickup**
-  (choose an open window) → confirmation screen.
+**Public buyers (no login)**
+- Item grid with status badges (Available / Pending / Sold), category filters,
+  move-out urgency banner, bundle-discount banner
+- Per-item pages (`/item/{slug}`) with gallery, copy link, price-drop preview
+- Make an offer (incl. bundle offers) → seller gets a Telegram DM
+- Private negotiation thread per offer (`/offer/{id}?t={token}` — capability
+  URL, no account needed)
+- Book a pickup window → Telegram DM; declined bookings reopen the window
 
-**Admin (single seller, phone-friendly)**
-- **Inbox** — mock Telegram approval feed: each new offer/booking has inline
-  **Accept / Reject**. Accept offer → item goes *pending*; accept booking →
-  *confirmed*; reject booking → window reopens.
-- **Quick Add (AI intake)** — drop 1+ photos → each gets an AI-drafted title,
-  category, condition, description, and a **suggested price range**; sweep the
-  review queue approving/editing. Dimensions + final price stay manual.
-- **Items** — full CRUD, simulated photo upload, delivery option/fee, and
-  mark available/pending/sold.
-- **Pickup Windows** — create open slots; booked windows shown.
-- **Share & Export** — downloadable **master catalog QR**, per-item share links,
-  and **paste-ready exports** (per-item Marketplace text + one consolidated
-  Craigslist block, each with the moving-sale tag).
-- **Settings** — site name, move-out date, and a reset-demo control.
+**Admin (single seller, phone-friendly, `/admin`)**
+- Inbox mirroring the Telegram approval feed (accept/reject in either place)
+- Offers tab with negotiation threads and replies
+- Quick Add: drop photos → Anthropic vision drafts title/category/condition/
+  description + suggested price range; dimensions + final price stay manual
+- Item CRUD, photo upload (Supabase Storage), delivery options, status
+- Pickup windows, move-out date, bundle discount %, auto price-drop schedule
+  (applied daily by a Postgres cron job)
+- Master catalog QR download, per-item share links, paste-ready Marketplace /
+  Craigslist exports
 
-Phase 2 items from the brief (negotiation threads, buyer auto-notify, bundle
-discounts, analytics, category filters, custom domain) are intentionally **not** built.
+**Notifications**
+- New offer/booking → Telegram DM with inline **Accept / Reject** buttons
+  (Edge Function webhook handles the callbacks)
+- Optional buyer auto-notify by email on accept/decline (Resend)
 
 ## Project layout
 
 ```
+supabase/
+  migrations/0001_init.sql   schema, RLS, thread RPCs, price-drop cron, storage bucket
+  functions/
+    submit/                  buyer offer/booking intake + Telegram DM (service role)
+    telegram-webhook/        Accept/Reject callbacks + buyer email notify
+    ai-intake/               Anthropic vision listing draft (admin JWT required)
 src/
-  App.jsx                 routing (HashRouter) + top nav + urgency banner
-  services/
-    mockBackend.js        the swappable mock API (Supabase/Telegram/Anthropic stand-in)
-    seed.js               demo catalog, windows, offers, bookings, settings
-    useStore.js           useQuery/useSession hooks (re-run on backend mutations)
-    format.js, placeholder.js
-  components/             Banner, ItemForm, QRCode, shared UI (Modal/Spinner/Toast)
-  pages/
-    Storefront.jsx, ItemPage.jsx
-    Admin.jsx + admin/{Inbox,QuickAdd,Items,Windows,Share,Settings}.jsx
+  services/                  backend.js selector · mockBackend.js · supabaseBackend.js
+  pages/                     Storefront · ItemPage · OfferThread · Admin + tabs
+  components/                Banner · ItemForm · QRCode · shared UI
+docs/BACKEND_API.md          the service-layer contract
+GO_LIVE.md                   deployment checklist
+vercel.json                  SPA rewrites (root directory: moving-sale)
 ```
-
-## Swapping in the real backend
-
-`mockBackend.js` exposes an async, service-shaped API (`listItems`, `createOffer`,
-`resolveBooking`, `draftListing`, …). To go live, reimplement those methods against:
-
-- **Supabase** — Postgres tables mirror the brief's data model; Storage for photos;
-  Auth for the single admin (replace the hard-coded password).
-- **Telegram Edge Function** — replace the in-app inbox: notify on new
-  offers/bookings with inline Accept/Reject callbacks.
-- **Anthropic vision** — replace `draftListing()` with a real vision call that
-  drafts title/category/condition/description + a suggested price range.
-
-The React components consume only that API surface, so the UI should need little
-change once the methods are backed by real services.

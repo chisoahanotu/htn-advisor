@@ -1,13 +1,13 @@
 import { useState } from 'react'
-import { api } from '../../services/mockBackend.js'
+import { api } from '../../services/backend.js'
 import { useQuery } from '../../services/useStore.js'
 import { money } from '../../services/format.js'
 import { Spinner, useToast } from '../../components/ui.jsx'
 import QRCodeBox from '../../components/QRCode.jsx'
 
-// Site root for the master catalog QR + share links. With HashRouter the
-// catalog lives at <origin><path>#/ and items at #/item/<slug>.
-const SITE_ROOT = `${window.location.origin}${window.location.pathname}#/`
+// Site root for the master catalog QR + share links. Override with
+// VITE_SITE_URL in production if serving behind a custom domain.
+const SITE_ROOT = (import.meta.env.VITE_SITE_URL || window.location.origin).replace(/\/$/, '') + '/'
 const itemUrl = (slug) => `${SITE_ROOT}item/${slug}`
 
 function movingTag(count) {

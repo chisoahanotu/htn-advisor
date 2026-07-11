@@ -1,6 +1,5 @@
 import { useState } from 'react'
-import { api } from '../../services/mockBackend.js'
-import { placeholderPhoto } from '../../services/placeholder.js'
+import { api } from '../../services/backend.js'
 import { money } from '../../services/format.js'
 import ItemForm from '../../components/ItemForm.jsx'
 
@@ -18,15 +17,17 @@ export default function QuickAdd() {
     const entries = files.map((f) => ({
       id: Math.random().toString(36).slice(2),
       name: f.name,
-      photo: placeholderPhoto(f.name + Math.random(), f.name.replace(/\.[^.]+$/, '')),
+      file: f,
+      photo: null,
       draft: null,
       analyzing: true,
     }))
     setQueue((q) => [...entries, ...q])
-    // Kick off a mock Anthropic vision call per photo.
+    // Kick off a mock Anthropic vision call per photo — each file is analyzed
+    // independently so a multi-file drop stays a batch, not a single request.
     entries.forEach(async (entry) => {
-      const draft = await api.draftListing(entry.name)
-      setQueue((q) => q.map((x) => (x.id === entry.id ? { ...x, draft, analyzing: false } : x)))
+      const draft = await api.draftListing(entry.file)
+      setQueue((q) => q.map((x) => (x.id === entry.id ? { ...x, photo: draft.photo, draft, analyzing: false } : x)))
     })
   }
 
@@ -72,7 +73,7 @@ export default function QuickAdd() {
             <div className="review-card" key={entry.id}>
               <div style={{ display: 'flex', gap: 14 }}>
                 <div className="list-thumb" style={{ width: 90, height: 70 }}>
-                  <img src={entry.photo} alt={entry.name} />
+                  {entry.photo && <img src={entry.photo} alt={entry.name} />}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   {entry.analyzing ? (

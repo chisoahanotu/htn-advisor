@@ -2,6 +2,7 @@ import { Routes, Route, Link, useLocation } from 'react-router-dom'
 import Banner from './components/Banner.jsx'
 import Storefront from './pages/Storefront.jsx'
 import ItemPage from './pages/ItemPage.jsx'
+import OfferThread from './pages/OfferThread.jsx'
 import Admin from './pages/Admin.jsx'
 import { useSession } from './services/useStore.js'
 
@@ -34,6 +35,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Storefront />} />
         <Route path="/item/:slug" element={<ItemPage />} />
+        <Route path="/offer/:offerId" element={<OfferThread />} />
         <Route path="/admin" element={<Admin />} />
         <Route path="*" element={<Storefront />} />
       </Routes>

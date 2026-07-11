@@ -1,9 +1,38 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { api } from '../services/mockBackend.js'
+import { api } from '../services/backend.js'
 import { useQuery } from '../services/useStore.js'
-import { money, DELIVERY_LABELS, formatWindow } from '../services/format.js'
+import { money, DELIVERY_LABELS, formatWindow, formatDate } from '../services/format.js'
 import { StatusBadge, Modal, Spinner, useToast } from '../components/ui.jsx'
+import { track } from '../services/analytics.js'
+
+const MY_OFFERS_KEY = 'moving_sale_my_offers'
+
+// Buyers keep a token to reach their negotiation thread later — no account needed.
+function rememberMyOffer(entry) {
+  try {
+    const raw = localStorage.getItem(MY_OFFERS_KEY)
+    const list = raw ? JSON.parse(raw) : []
+    list.unshift(entry)
+    localStorage.setItem(MY_OFFERS_KEY, JSON.stringify(list))
+  } catch {
+    /* ignore quota / private mode */
+  }
+}
+
+// Sorted (desc) by days_before per the settings shape; finds the soonest
+// future drop date relative to move_out_date.
+function nextPriceDrop(settings) {
+  if (!settings?.price_drops?.length || !settings?.move_out_date) return null
+  const moveOut = new Date(settings.move_out_date + 'T00:00:00')
+  const now = new Date()
+  const drops = [...settings.price_drops].sort((a, b) => b.days_before - a.days_before)
+  const upcoming = drops
+    .map((d) => ({ pct: d.pct, date: new Date(moveOut.getTime() - d.days_before * 86400000) }))
+    .filter((d) => d.date > now)
+    .sort((a, b) => a.date - b.date)
+  return upcoming[0] || null
+}
 
 function Confirm({ text }) {
   return (
@@ -16,23 +45,50 @@ function Confirm({ text }) {
 }
 
 function OfferModal({ item, onClose }) {
-  const [form, setForm] = useState({ offer_price: '', buyer_name: '', buyer_contact: '', message: '' })
+  const { data: settings } = useQuery(() => api.getSettings())
+  const [form, setForm] = useState({ offer_price: '', buyer_name: '', buyer_contact: '', message: '', is_bundle: false })
   const [sent, setSent] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [tracked, setTracked] = useState(null) // { id, thread_token }
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value })
 
   async function submit(e) {
     e.preventDefault()
     setBusy(true)
-    await api.createOffer({ item_id: item.id, ...form })
+    const res = await api.createOffer({ item_id: item.id, ...form })
     setBusy(false)
+    if (res?.id) {
+      rememberMyOffer({
+        offer_id: res.id,
+        token: res.thread_token,
+        item_title: item.title,
+        created_at: new Date().toISOString(),
+      })
+      setTracked(res)
+    }
+    track('offer_submitted', { item_id: item.id, is_bundle: form.is_bundle })
     setSent(true)
   }
+
+  const showBundle = settings?.bundle_discount_pct > 0
 
   return (
     <Modal title={sent ? 'Offer sent' : `Make an offer — ${item.title}`} onClose={onClose}>
       {sent ? (
-        <Confirm text="The seller has been notified and will accept or decline." />
+        <div>
+          <Confirm text="The seller has been notified and will accept or decline." />
+          {tracked && (
+            <p style={{ textAlign: 'center', marginTop: 14 }}>
+              <Link
+                to={`/offer/${tracked.id}?t=${tracked.thread_token}`}
+                className="btn btn-ghost btn-sm"
+                onClick={onClose}
+              >
+                Track your offer &amp; message the seller
+              </Link>
+            </p>
+          )}
+        </div>
       ) : (
         <form onSubmit={submit}>
           <div className="field">
@@ -51,6 +107,20 @@ function OfferModal({ item, onClose }) {
             <label>Message (optional)</label>
             <textarea value={form.message} onChange={set('message')} placeholder="Anything the seller should know?" />
           </div>
+          {showBundle && (
+            <div className="field" style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <input
+                type="checkbox"
+                id="is_bundle"
+                checked={form.is_bundle}
+                onChange={(e) => setForm({ ...form, is_bundle: e.target.checked })}
+                style={{ width: 'auto' }}
+              />
+              <label htmlFor="is_bundle" style={{ marginBottom: 0 }}>
+                This is a bundle offer (multiple items)
+              </label>
+            </div>
+          )}
           <button className="btn btn-primary btn-block" disabled={busy}>
             {busy ? 'Sending…' : 'Send offer'}
           </button>
@@ -72,6 +142,7 @@ function BookingModal({ item, onClose }) {
     setBusy(true)
     await api.createBooking({ item_id: item.id, ...form })
     setBusy(false)
+    track('booking_submitted', { item_id: item.id })
     setSent(true)
   }
 
@@ -118,9 +189,14 @@ function BookingModal({ item, onClose }) {
 export default function ItemPage() {
   const { slug } = useParams()
   const { data: item, loading } = useQuery(() => api.getItemBySlug(slug), [slug])
+  const { data: settings } = useQuery(() => api.getSettings())
   const [activePhoto, setActivePhoto] = useState(0)
   const [modal, setModal] = useState(null) // 'offer' | 'booking'
   const [toast, setToast] = useToast()
+
+  useEffect(() => {
+    track('item_viewed', { slug })
+  }, [slug])
 
   if (loading) return <Spinner />
   if (!item)
@@ -133,6 +209,8 @@ export default function ItemPage() {
     )
 
   const actionable = item.status === 'available'
+  const drop = actionable ? nextPriceDrop(settings) : null
+  const hasOriginalPrice = item.original_price && item.original_price > item.price
 
   function copyLink() {
     navigator.clipboard?.writeText(window.location.href)
@@ -174,7 +252,15 @@ export default function ItemPage() {
             <StatusBadge status={item.status} />
           </div>
           <h1>{item.title}</h1>
-          <div className="price-lg">{money(item.price)}</div>
+          <div className="price-lg">
+            {money(item.price)}
+            {hasOriginalPrice && <span className="was-price">was {money(item.original_price)}</span>}
+          </div>
+          {drop && (
+            <p className="hint price-drop-hint">
+              Price drops {drop.pct}% on {formatDate(drop.date.toISOString(), { month: 'short', day: 'numeric' })}
+            </p>
+          )}
 
           <div>
             {specs.map(([k, v]) => (

@@ -14,6 +14,7 @@ export const SEED_ITEMS = [
     description:
       'Comfortable 5-seat sectional in charcoal gray. Some light wear on the left armrest but structurally solid and very comfy. Pet-free, smoke-free home.',
     price: 425,
+    original_price: null,
     dimensions: '110W x 84D x 34H in',
     category: 'Furniture',
     condition: 'Good',
@@ -29,6 +30,7 @@ export const SEED_ITEMS = [
     description:
       'Electric sit/stand desk, bamboo top. Programmable height presets. Works perfectly. Great for a home office.',
     price: 260,
+    original_price: null,
     dimensions: '60W x 30D x 25–50H in',
     category: 'Office',
     condition: 'Like New',
@@ -44,6 +46,7 @@ export const SEED_ITEMS = [
     description:
       'Medium frame hybrid, recently tuned with new brake pads. Great commuter. Minor scratches on the frame.',
     price: 300,
+    original_price: null,
     dimensions: 'M frame (56cm)',
     category: 'Outdoor',
     condition: 'Good',
@@ -59,6 +62,7 @@ export const SEED_ITEMS = [
     description:
       'Solid oak table, seats 4–6 with the leaf in. Includes 4 matching chairs. A few water rings on top, otherwise great.',
     price: 200,
+    original_price: 230,
     dimensions: '60W x 38D x 30H in',
     category: 'Furniture',
     condition: 'Fair',
@@ -73,6 +77,7 @@ export const SEED_ITEMS = [
     title: 'LG 34" UltraWide Monitor',
     description: '34-inch 3440x1440 ultrawide. No dead pixels. Comes with stand and power cable.',
     price: 220,
+    original_price: null,
     dimensions: '34 in diagonal',
     category: 'Electronics',
     condition: 'Like New',
@@ -87,6 +92,7 @@ export const SEED_ITEMS = [
     title: 'Fiddle Leaf Fig (5 ft)',
     description: 'Big, healthy fiddle leaf fig in a ceramic pot. Too tall to move — needs a good home.',
     price: 45,
+    original_price: null,
     dimensions: '~60H in incl. pot',
     category: 'Home',
     condition: 'Good',
@@ -123,8 +129,21 @@ export const SEED_OFFERS = [
     buyer_contact: 'priya@example.com',
     offer_price: 170,
     message: 'Could do pickup this weekend if that works!',
+    is_bundle: false,
+    thread_token: 'seed-thread-token-1',
     status: 'new',
     created_at: new Date('2026-07-09T15:30:00').toISOString(),
+  },
+]
+
+// Seeded negotiation thread on off_1 so the demo has something to show.
+export const SEED_MESSAGES = [
+  {
+    id: 'msg_1',
+    offer_id: 'off_1',
+    sender: 'seller',
+    body: 'Thanks for the offer! Would Saturday morning work for pickup?',
+    created_at: new Date('2026-07-09T16:10:00').toISOString(),
   },
 ]
 
@@ -143,4 +162,9 @@ export const SEED_BOOKINGS = [
 export const SEED_SETTINGS = {
   move_out_date: '2026-07-31',
   site_name: 'Maple St. Moving Sale',
+  bundle_discount_pct: 10,
+  price_drops: [
+    { days_before: 14, pct: 10 },
+    { days_before: 7, pct: 20 },
+  ],
 }

@@ -1,5 +1,5 @@
 import { useQuery } from '../services/useStore.js'
-import { api } from '../services/mockBackend.js'
+import { api } from '../services/backend.js'
 import { formatDate, daysUntil } from '../services/format.js'
 
 // Persistent move-out urgency banner (per brief: "Everything must go by {date}").

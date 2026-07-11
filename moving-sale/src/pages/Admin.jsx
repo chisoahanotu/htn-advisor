@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { api } from '../services/mockBackend.js'
+import { api } from '../services/backend.js'
 import { useSession, useQuery } from '../services/useStore.js'
 import Inbox from './admin/Inbox.jsx'
+import Offers from './admin/Offers.jsx'
 import Items from './admin/Items.jsx'
 import QuickAdd from './admin/QuickAdd.jsx'
 import Windows from './admin/Windows.jsx'
@@ -9,14 +10,16 @@ import Settings from './admin/Settings.jsx'
 import Share from './admin/Share.jsx'
 
 function Login() {
+  const [email, setEmail] = useState('')
   const [pw, setPw] = useState('')
   const [err, setErr] = useState('')
   const [busy, setBusy] = useState(false)
+  const showEmail = api.authMode === 'email'
 
   async function submit(e) {
     e.preventDefault()
     setBusy(true)
-    const res = await api.signIn(pw)
+    const res = await api.signIn({ email, password: pw })
     setBusy(false)
     if (!res.ok) setErr(res.error)
   }
@@ -29,18 +32,26 @@ function Login() {
           Single admin. Buyers never see this.
         </p>
         <form onSubmit={submit}>
+          {showEmail && (
+            <div className="field">
+              <label>Email</label>
+              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoFocus />
+            </div>
+          )}
           <div className="field">
             <label>Password</label>
-            <input type="password" value={pw} onChange={(e) => setPw(e.target.value)} autoFocus />
+            <input type="password" value={pw} onChange={(e) => setPw(e.target.value)} autoFocus={!showEmail} />
           </div>
           {err && <p style={{ color: 'var(--red)', fontSize: 13, marginBottom: 10 }}>{err}</p>}
           <button className="btn btn-primary btn-block" disabled={busy}>
             {busy ? 'Checking…' : 'Log in'}
           </button>
         </form>
-        <p className="hint" style={{ marginTop: 14 }}>
-          Prototype login — use <code>{api.demoPasswordHint}</code>. Real app uses Supabase Auth.
-        </p>
+        {api.authMode === 'password' && (
+          <p className="hint" style={{ marginTop: 14 }}>
+            Prototype login — use <code>{api.demoPasswordHint}</code>. Real app uses Supabase Auth.
+          </p>
+        )}
       </div>
     </div>
   )
@@ -48,6 +59,7 @@ function Login() {
 
 const TABS = [
   { key: 'inbox', label: 'Inbox', C: Inbox },
+  { key: 'offers', label: 'Offers', C: Offers },
   { key: 'quickadd', label: 'Quick Add', C: QuickAdd },
   { key: 'items', label: 'Items', C: Items },
   { key: 'windows', label: 'Pickup Windows', C: Windows },

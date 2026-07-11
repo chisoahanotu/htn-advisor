@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { api } from '../services/mockBackend.js'
+import { api } from '../services/backend.js'
 import { useQuery } from '../services/useStore.js'
 import { money } from '../services/format.js'
 import { StatusBadge, Spinner } from '../components/ui.jsx'
+import { track } from '../services/analytics.js'
 
 const FILTERS = [
   { key: 'all', label: 'Everything' },
@@ -41,11 +42,20 @@ function Tile({ item }) {
 
 export default function Storefront() {
   const { data: items, loading } = useQuery(() => api.listItems())
+  const { data: settings } = useQuery(() => api.getSettings())
   const [filter, setFilter] = useState('all')
+  const [category, setCategory] = useState('all')
+
+  useEffect(() => {
+    track('catalog_viewed')
+  }, [])
 
   if (loading) return <Spinner />
 
-  const shown = items.filter((i) => filter === 'all' || i.status === filter)
+  const categories = [...new Set(items.map((i) => i.category))].filter(Boolean)
+  const shown = items.filter(
+    (i) => (filter === 'all' || i.status === filter) && (category === 'all' || i.category === category),
+  )
   const availableCount = items.filter((i) => i.status === 'available').length
 
   return (
@@ -56,6 +66,12 @@ export default function Storefront() {
           {availableCount} items still available · Make an offer or book a pickup — no account needed.
         </p>
       </div>
+
+      {settings?.bundle_discount_pct > 0 && (
+        <div className="pill bundle-banner">
+          Take it all: bundle 2+ items and save {settings.bundle_discount_pct}% — mention it in your offer.
+        </div>
+      )}
 
       <div className="filter-bar">
         {FILTERS.map((f) => (
@@ -68,6 +84,19 @@ export default function Storefront() {
           </button>
         ))}
       </div>
+
+      {categories.length > 0 && (
+        <div className="filter-bar">
+          <button className={`chip ${category === 'all' ? 'active' : ''}`} onClick={() => setCategory('all')}>
+            All categories
+          </button>
+          {categories.map((c) => (
+            <button key={c} className={`chip ${category === c ? 'active' : ''}`} onClick={() => setCategory(c)}>
+              {c}
+            </button>
+          ))}
+        </div>
+      )}
 
       {shown.length === 0 ? (
         <div className="empty">No items in this view.</div>
