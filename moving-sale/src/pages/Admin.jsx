@@ -19,7 +19,7 @@ function Login() {
   async function submit(e) {
     e.preventDefault()
     setBusy(true)
-    const res = await api.signIn({ email, password: pw })
+    const res = await api.signIn({ email: email.trim(), password: pw.trim() })
     setBusy(false)
     if (!res.ok) setErr(res.error)
   }
@@ -35,12 +35,25 @@ function Login() {
           {showEmail && (
             <div className="field">
               <label>Email</label>
-              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoFocus />
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="username"
+                autoCapitalize="none"
+                autoFocus
+              />
             </div>
           )}
           <div className="field">
             <label>Password</label>
-            <input type="password" value={pw} onChange={(e) => setPw(e.target.value)} autoFocus={!showEmail} />
+            <input
+              type="password"
+              value={pw}
+              onChange={(e) => setPw(e.target.value)}
+              autoComplete="current-password"
+              autoFocus={!showEmail}
+            />
           </div>
           {err && <p style={{ color: 'var(--red)', fontSize: 13, marginBottom: 10 }}>{err}</p>}
           <button className="btn btn-primary btn-block" disabled={busy}>
