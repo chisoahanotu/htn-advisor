@@ -36,17 +36,15 @@ jobs:
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
           VITE_SITE_URL: ${{ vars.VITE_SITE_URL }}
-          VITE_BASE: ${{ vars.VITE_BASE || '/htn-advisor/' }}
+          VITE_BASE: ${{ vars.VITE_BASE || '/' }}
           VITE_POSTHOG_KEY: ${{ vars.VITE_POSTHOG_KEY }}
         run: |
           npm ci
           npm run build
           # SPA fallback: unknown paths serve the app shell
           cp dist/index.html dist/404.html
-          # Custom domain (set VITE_SITE_URL + VITE_BASE=/ when using one)
-          if [ -n "${{ vars.PAGES_CUSTOM_DOMAIN }}" ]; then
-            echo "${{ vars.PAGES_CUSTOM_DOMAIN }}" > dist/CNAME
-          fi
+          # Custom domain — must match Settings -> Pages -> Custom domain
+          echo "${{ vars.PAGES_CUSTOM_DOMAIN || 'avalonestatesale.com' }}" > dist/CNAME
       - name: Ensure Pages builds from this workflow (not the legacy branch build)
         uses: actions/github-script@v7
         with:
