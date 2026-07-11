@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
-import { api } from './mockBackend.js'
+import { api } from './backend.js'
 
-// Runs an async loader and re-runs it whenever the mock backend mutates.
+// Runs an async loader and re-runs it whenever the active backend mutates.
 // Mirrors how a real app would subscribe to Supabase realtime changes.
 export function useQuery(loader, deps = []) {
   const [data, setData] = useState(null)
