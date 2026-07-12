@@ -112,7 +112,7 @@ export default function Storefront() {
       <div style={{ margin: '16px 0 4px' }}>
         <h1 style={{ fontSize: 30, fontWeight: 800, letterSpacing: '-0.02em' }}>Everything Must Go</h1>
         <p className="muted" style={{ marginTop: 6, fontSize: 15 }}>
-          {availableCount} items still available · Make an offer or book a pickup — no account needed.
+          {availableCount} items still available · Tap anything to buy it or book a pickup — no account needed.
         </p>
       </div>
 
