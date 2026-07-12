@@ -204,3 +204,8 @@ img { max-width: 100%; display: block; }
 .draft-row.added .check { color: #2e7d32; font-weight: 800; }
 .draft-grid { display: grid; gap: 0 12px; grid-template-areas: "title title price" "size dims dims" "desc desc desc"; grid-template-columns: 1fr 1fr 110px; }
 @media (max-width: 640px) { .draft-grid { grid-template-areas: "title" "price" "size" "dims" "desc"; grid-template-columns: 1fr; } }
+
+/* ---- photo crop editor ---- */
+.crop-stage { position: relative; width: 100%; height: min(55vh, 420px); background: #111; border-radius: 10px; overflow: hidden; }
+.crop-controls { margin-top: 12px; }
+.crop-controls input[type="range"] { width: 100%; }

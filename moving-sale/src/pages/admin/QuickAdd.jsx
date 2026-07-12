@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { api } from '../../services/backend.js'
 import { money } from '../../services/format.js'
 import ItemForm from '../../components/ItemForm.jsx'
+import CropModal from '../../components/CropModal.jsx'
 
 // Bulk AI intake. Drop many photos at once -> each photo is analyzed by
 // Anthropic vision, which may find SEVERAL sellable items in one shot. Every
@@ -81,15 +82,33 @@ function DraftRow({ row, onChange, onAdd, onDiscard, onEdit, busy }) {
 }
 
 export default function QuickAdd() {
-  // batches: {id, name, photo, groupId, rows: [draft rows], analyzing, error}
+  // batches: {id, name, file, photo, groupId, rows: [draft rows], analyzing, error}
   const [batches, setBatches] = useState([])
   const [editing, setEditing] = useState(null) // { batch, rowIndex }
+  const [cropping, setCropping] = useState(null) // { batch, src }
   const [busyKey, setBusyKey] = useState(null)
 
   const patchBatch = (id, patch) =>
     setBatches((bs) => bs.map((b) => (b.id === id ? { ...b, ...(typeof patch === 'function' ? patch(b) : patch) } : b)))
 
-  async function onFiles(e) {
+  async function analyze(id, file) {
+    try {
+      const { photo, items } = await api.draftListing(file)
+      const rows = items.map((it) => ({
+        ...it,
+        price: it.suggested_price,
+        dimensions: '',
+        delivery_option: sizeToDelivery(it.size_class),
+        added: false,
+      }))
+      patchBatch(id, { photo, rows, analyzing: false })
+    } catch (err) {
+      console.error('draft failed:', err)
+      patchBatch(id, { analyzing: false, error: 'AI analysis failed — try re-uploading this photo.' })
+    }
+  }
+
+  function onFiles(e) {
     const files = [...e.target.files]
     e.target.value = ''
     const entries = files.map((f) => ({
@@ -104,22 +123,19 @@ export default function QuickAdd() {
     }))
     setBatches((bs) => [...entries, ...bs])
     // Each photo is analyzed independently so a big drop streams in as it finishes.
-    entries.forEach(async (entry) => {
-      try {
-        const { photo, items } = await api.draftListing(entry.file)
-        const rows = items.map((it) => ({
-          ...it,
-          price: it.suggested_price,
-          dimensions: '',
-          delivery_option: sizeToDelivery(it.size_class),
-          added: false,
-        }))
-        patchBatch(entry.id, { photo, rows, analyzing: false })
-      } catch (err) {
-        console.error('draft failed:', err)
-        patchBatch(entry.id, { analyzing: false, error: 'AI analysis failed — try re-uploading this photo.' })
-      }
-    })
+    entries.forEach((entry) => analyze(entry.id, entry.file))
+  }
+
+  function openCrop(batch) {
+    setCropping({ batch, src: URL.createObjectURL(batch.file) })
+  }
+
+  function applyCrop(file) {
+    const { batch, src } = cropping
+    URL.revokeObjectURL(src)
+    setCropping(null)
+    patchBatch(batch.id, { file, name: file.name, photo: null, rows: [], analyzing: true, error: null })
+    analyze(batch.id, file)
   }
 
   async function addRow(batch, i) {
@@ -192,6 +208,11 @@ export default function QuickAdd() {
                     <>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 6 }}>
                         <span className="ai-badge">✨ {batch.rows.length} item{batch.rows.length !== 1 ? 's' : ''} found</span>
+                        {batch.file && batch.rows.some((r) => !r.added) && (
+                          <button className="btn btn-ghost btn-sm" onClick={() => openCrop(batch)}>
+                            ✂️ Crop
+                          </button>
+                        )}
                         {batch.rows.filter((r) => !r.added).length > 1 && (
                           <button
                             className="btn btn-primary btn-sm"
@@ -223,6 +244,22 @@ export default function QuickAdd() {
               </div>
               {!batch.analyzing && (batch.error || batch.rows.length === 0 || batch.rows.every((r) => r.added)) && (
                 <div className="row-actions" style={{ marginTop: 10 }}>
+                  {batch.error && batch.file && (
+                    <>
+                      <button
+                        className="btn btn-ghost btn-sm"
+                        onClick={() => {
+                          patchBatch(batch.id, { analyzing: true, error: null })
+                          analyze(batch.id, batch.file)
+                        }}
+                      >
+                        Retry
+                      </button>
+                      <button className="btn btn-ghost btn-sm" onClick={() => openCrop(batch)}>
+                        ✂️ Crop &amp; retry
+                      </button>
+                    </>
+                  )}
                   <button
                     className="btn btn-ghost btn-sm"
                     onClick={() => setBatches((bs) => bs.filter((b) => b.id !== batch.id))}
@@ -234,6 +271,18 @@ export default function QuickAdd() {
             </div>
           ))}
         </>
+      )}
+
+      {cropping && (
+        <CropModal
+          src={cropping.src}
+          fileName={cropping.batch.name}
+          onClose={() => {
+            URL.revokeObjectURL(cropping.src)
+            setCropping(null)
+          }}
+          onApply={applyCrop}
+        />
       )}
 
       {editing && (
