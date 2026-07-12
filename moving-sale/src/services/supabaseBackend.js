@@ -55,6 +55,32 @@ function slugify(text) {
   return base || 'item'
 }
 
+// Camera-roll photos are huge (4000px+, several MB) and iPhones may hand over
+// HEIC, which non-Apple browsers and the vision model can't read. Downscale to
+// a web-friendly size and re-encode as JPEG on-device before uploading. If the
+// browser can't decode the file (e.g. HEIC on Chrome), upload it untouched.
+const WEB_SAFE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+const MAX_EDGE = 2048
+
+async function normalizePhoto(file) {
+  try {
+    const bmp = await createImageBitmap(file)
+    const scale = Math.min(1, MAX_EDGE / Math.max(bmp.width, bmp.height))
+    const webSafe = WEB_SAFE_TYPES.includes(file.type)
+    if (webSafe && scale === 1 && file.size < 3 * 1024 * 1024) return file
+    const canvas = document.createElement('canvas')
+    canvas.width = Math.round(bmp.width * scale)
+    canvas.height = Math.round(bmp.height * scale)
+    canvas.getContext('2d').drawImage(bmp, 0, 0, canvas.width, canvas.height)
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.88))
+    if (!blob) return file
+    const base = (file.name || 'photo').replace(/\.[a-z0-9]+$/i, '')
+    return new File([blob], `${base}.jpg`, { type: 'image/jpeg' })
+  } catch {
+    return file
+  }
+}
+
 // ---- public API -----------------------------------------------------------
 export const api = {
   backendName: 'supabase',
@@ -151,7 +177,8 @@ export const api = {
   },
   async uploadPhotos(files) {
     const urls = []
-    for (const file of files) {
+    for (const raw of files) {
+      const file = await normalizePhoto(raw)
       const ext = (file.name?.split('.').pop() || 'jpg').toLowerCase()
       const path = `items/${crypto.randomUUID()}.${ext}`
       const { error } = await client().storage.from('photos').upload(path, file)
