@@ -27,7 +27,7 @@ export default function OfferThread() {
     return (
       <div className="wrap">
         <div className="empty">
-          <p>We couldn't find that offer thread. Double-check the link from your confirmation.</p>
+          <p>We couldn't find that request thread. Double-check the link from your confirmation.</p>
           <div style={{ marginTop: 14 }}>
             <Link to="/" className="btn btn-ghost btn-sm">
               ← Back to catalog
@@ -57,12 +57,12 @@ export default function OfferThread() {
       </Link>
 
       <div className="card" style={{ padding: 20, marginTop: 16 }}>
-        <div className="section-title">Your offer</div>
+        <div className="section-title">Your request</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
           <strong style={{ fontSize: 17 }}>{offer.item_title}</strong>
           <span className={`badge ${meta.badge}`}>{meta.label}</span>
         </div>
-        <p className="muted" style={{ marginTop: 4 }}>Your offer: {money(offer.offer_price)}</p>
+        <p className="muted" style={{ marginTop: 4 }}>Your request: {money(offer.offer_price)}</p>
 
         {offer.status === 'accepted' && (
           <div className="thread-banner thread-banner-accepted">

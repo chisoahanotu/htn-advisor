@@ -48,7 +48,7 @@ Deno.serve(async (req) => {
       if (error) throw error
 
       const text =
-        `💵 New offer: $${offer_price} on “${item.title}” from ${buyer_name}` +
+        `🛒 Purchase request: “${item.title}” — $${offer_price} from ${buyer_name}` +
         `${is_bundle ? ' (bundle)' : ''}\nContact: ${buyer_contact}` +
         `${message ? `\n“${message}”` : ''}`
       const messageId = await notifySeller(text, 'offer', offer.id)

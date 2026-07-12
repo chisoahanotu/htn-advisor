@@ -118,7 +118,7 @@ export default function Storefront() {
 
       {settings?.bundle_discount_pct > 0 && (
         <div className="pill bundle-banner">
-          Take it all: bundle 2+ items and save {settings.bundle_discount_pct}% — mention it in your offer.
+          Take it all: bundle 2+ items and save {settings.bundle_discount_pct}% — text me for a bundle deal.
         </div>
       )}
 

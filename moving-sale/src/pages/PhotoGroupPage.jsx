@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { api } from '../services/backend.js'
 import { useQuery } from '../services/useStore.js'
@@ -13,11 +13,21 @@ import { PriceStamps } from './Storefront.jsx'
 export default function PhotoGroupPage() {
   const { groupId } = useParams()
   const { data: items, loading } = useQuery(() => api.listItems())
+  const { data: settings } = useQuery(() => api.getSettings())
   const [modal, setModal] = useState(null) // { kind: 'offer'|'booking', item }
 
   useEffect(() => {
     track('photo_group_viewed', { group_id: groupId })
   }, [groupId])
+
+  const viewedRef = useRef(null)
+  useEffect(() => {
+    if (loading || viewedRef.current === groupId) return
+    viewedRef.current = groupId
+    ;(items || [])
+      .filter((i) => i.photo_group_id === groupId)
+      .forEach((i) => api.recordView(i.id))
+  }, [loading, groupId, items])
 
   if (loading) return <Spinner />
 
@@ -47,6 +57,14 @@ export default function PhotoGroupPage() {
       <div className="section-title" style={{ marginTop: 18 }}>
         {members.length} items in this photo
       </div>
+      {settings?.contact_phone && (
+        <p className="hint" style={{ marginBottom: 12 }}>
+          💬 Questions or want to negotiate? Text me at{' '}
+          <a href={`sms:${settings.contact_phone}`} style={{ color: 'var(--rust)', fontWeight: 600 }}>
+            {settings.contact_phone}
+          </a>
+        </p>
+      )}
 
       {members.map((item) => {
         const actionable = item.status === 'available'
@@ -69,7 +87,7 @@ export default function PhotoGroupPage() {
                 {actionable ? (
                   <>
                     <button className="btn btn-primary btn-sm" onClick={() => setModal({ kind: 'offer', item })}>
-                      Make an offer
+                      🛒 I'll take it — {money(item.price)}
                     </button>
                     <button className="btn btn-ghost btn-sm" onClick={() => setModal({ kind: 'booking', item })}>
                       Request pickup

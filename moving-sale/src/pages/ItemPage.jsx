@@ -46,7 +46,7 @@ function Confirm({ text }) {
 
 export function OfferModal({ item, onClose }) {
   const { data: settings } = useQuery(() => api.getSettings())
-  const [form, setForm] = useState({ offer_price: '', buyer_name: '', buyer_contact: '', message: '', is_bundle: false })
+  const [form, setForm] = useState({ buyer_name: '', buyer_contact: '', message: '' })
   const [sent, setSent] = useState(false)
   const [busy, setBusy] = useState(false)
   const [tracked, setTracked] = useState(null) // { id, thread_token }
@@ -55,7 +55,8 @@ export function OfferModal({ item, onClose }) {
   async function submit(e) {
     e.preventDefault()
     setBusy(true)
-    const res = await api.createOffer({ item_id: item.id, ...form })
+    // Fixed-price purchase request — negotiation happens over text, off-site.
+    const res = await api.createOffer({ item_id: item.id, offer_price: item.price, ...form })
     setBusy(false)
     if (res?.id) {
       rememberMyOffer({
@@ -66,17 +67,15 @@ export function OfferModal({ item, onClose }) {
       })
       setTracked(res)
     }
-    track('offer_submitted', { item_id: item.id, is_bundle: form.is_bundle })
+    track('purchase_requested', { item_id: item.id })
     setSent(true)
   }
 
-  const showBundle = settings?.bundle_discount_pct > 0
-
   return (
-    <Modal title={sent ? 'Offer sent' : `Make an offer — ${item.title}`} onClose={onClose}>
+    <Modal title={sent ? 'Request sent' : `Buy — ${item.title} (${money(item.price)})`} onClose={onClose}>
       {sent ? (
         <div>
-          <Confirm text="The seller has been notified and will accept or decline." />
+          <Confirm text="The seller has been notified and will confirm your purchase." />
           {tracked && (
             <p style={{ textAlign: 'center', marginTop: 14 }}>
               <Link
@@ -84,17 +83,13 @@ export function OfferModal({ item, onClose }) {
                 className="btn btn-ghost btn-sm"
                 onClick={onClose}
               >
-                Track your offer &amp; message the seller
+                Track your request &amp; message the seller
               </Link>
             </p>
           )}
         </div>
       ) : (
         <form onSubmit={submit}>
-          <div className="field">
-            <label>Your offer (USD)</label>
-            <input type="number" min="1" required placeholder={`Asking ${money(item.price)}`} value={form.offer_price} onChange={set('offer_price')} />
-          </div>
           <div className="field">
             <label>Name</label>
             <input required value={form.buyer_name} onChange={set('buyer_name')} />
@@ -105,24 +100,10 @@ export function OfferModal({ item, onClose }) {
           </div>
           <div className="field">
             <label>Message (optional)</label>
-            <textarea value={form.message} onChange={set('message')} placeholder="Anything the seller should know?" />
+            <textarea value={form.message} onChange={set('message')} placeholder="Pickup timing, questions, etc." />
           </div>
-          {showBundle && (
-            <div className="field" style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <input
-                type="checkbox"
-                id="is_bundle"
-                checked={form.is_bundle}
-                onChange={(e) => setForm({ ...form, is_bundle: e.target.checked })}
-                style={{ width: 'auto' }}
-              />
-              <label htmlFor="is_bundle" style={{ marginBottom: 0 }}>
-                This is a bundle offer (multiple items)
-              </label>
-            </div>
-          )}
           <button className="btn btn-primary btn-block" disabled={busy}>
-            {busy ? 'Sending…' : 'Send offer'}
+            {busy ? 'Sending…' : `Request to buy — ${money(item.price)}`}
           </button>
         </form>
       )}
@@ -197,6 +178,10 @@ export default function ItemPage() {
   useEffect(() => {
     track('item_viewed', { slug })
   }, [slug])
+
+  useEffect(() => {
+    if (item?.id) api.recordView(item.id)
+  }, [item?.id])
 
   if (loading) return <Spinner />
   if (!item)
@@ -277,7 +262,7 @@ export default function ItemPage() {
             {actionable ? (
               <>
                 <button className="btn btn-primary" onClick={() => setModal('offer')}>
-                  Make an offer
+                  🛒 I'll take it — {money(item.price)}
                 </button>
                 <button className="btn btn-ghost" onClick={() => setModal('booking')}>
                   Request pickup
@@ -294,6 +279,14 @@ export default function ItemPage() {
           </div>
           {!actionable && (
             <p className="hint">Sold and pending items stay listed for reference but can't be reserved.</p>
+          )}
+          {settings?.contact_phone && (
+            <p className="hint" style={{ marginTop: 10 }}>
+              💬 Questions or want to negotiate? Text me at{' '}
+              <a href={`sms:${settings.contact_phone}`} style={{ color: 'var(--rust)', fontWeight: 600 }}>
+                {settings.contact_phone}
+              </a>
+            </p>
           )}
         </div>
       </div>

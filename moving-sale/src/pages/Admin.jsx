@@ -75,7 +75,7 @@ function Login() {
 
 const TABS = [
   { key: 'inbox', label: 'Inbox', C: Inbox },
-  { key: 'offers', label: 'Offers', C: Offers },
+  { key: 'offers', label: 'Requests', C: Offers },
   { key: 'quickadd', label: 'Quick Add', C: QuickAdd },
   { key: 'items', label: 'Items', C: Items },
   { key: 'windows', label: 'Pickup Windows', C: Windows },

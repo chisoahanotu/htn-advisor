@@ -7,6 +7,7 @@ import ItemForm from '../../components/ItemForm.jsx'
 
 export default function Items() {
   const { data: items, loading } = useQuery(() => api.listItems())
+  const { data: offers } = useQuery(() => api.listOffers())
   const [editing, setEditing] = useState(null) // item or {} for new
   const [confirmDel, setConfirmDel] = useState(null)
 
@@ -31,6 +32,9 @@ export default function Items() {
               <div className="t">{item.title}</div>
               <div className="s">
                 {money(item.price)} · {item.dimensions || 'no dimensions'}
+              </div>
+              <div className="s" style={{ marginTop: 2 }}>
+                👁 {item.views ?? 0} views · 🛒 {(offers || []).filter((o) => o.item_id === item.id).length} requests
               </div>
             </div>
             <div className="row-actions">

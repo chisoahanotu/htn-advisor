@@ -40,7 +40,7 @@ function freshDb() {
         id: 'ntf_1',
         kind: 'offer',
         ref_id: 'off_1',
-        text: 'New offer: $170 on “Oak Dining Table + 4 Chairs” from Priya.',
+        text: 'Purchase request: “Oak Dining Table + 4 Chairs” — $170 from Priya.',
         created_at: new Date('2026-07-09T15:30:05').toISOString(),
         resolved: false,
       },
@@ -207,6 +207,11 @@ export const api = {
   },
 
   // ---- offers (buyer action -> Telegram) ----
+  async recordView(itemId) {
+    const item = db.items.find((i) => i.id === itemId)
+    if (item) item.views = (item.views || 0) + 1
+    persist()
+  },
   async listOffers() {
     await delay()
     return clone(db.offers)
@@ -231,7 +236,7 @@ export const api = {
       id: uid('ntf'),
       kind: 'offer',
       ref_id: offer.id,
-      text: `New offer: $${offer.offer_price} on “${item?.title ?? 'item'}” from ${offer.buyer_name}.`,
+      text: `Purchase request: “${item?.title ?? 'item'}” — $${offer.offer_price} from ${offer.buyer_name}.`,
       created_at: offer.created_at,
       resolved: false,
     })

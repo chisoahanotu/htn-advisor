@@ -163,6 +163,14 @@ export const api = {
   },
 
   // ---- offers (buyer action -> Telegram via Edge Function) ----
+  // Fire-and-forget anonymous view counter (SECURITY DEFINER RPC).
+  async recordView(itemId) {
+    try {
+      await client().rpc('record_view', { p_item_id: itemId })
+    } catch {
+      /* analytics must never break the page */
+    }
+  },
   async listOffers() {
     const { data, error } = await client().from('offers').select('*').order('created_at', { ascending: false })
     check(error)
@@ -341,7 +349,7 @@ export const api = {
       id: `ntf_off_${o.id}`,
       kind: 'offer',
       ref_id: o.id,
-      text: `New offer: $${o.offer_price} on "${titleById.get(o.item_id) ?? 'item'}" from ${o.buyer_name}.`,
+      text: `Purchase request: "${titleById.get(o.item_id) ?? 'item'}" — $${o.offer_price} from ${o.buyer_name}.`,
       created_at: o.created_at,
       resolved: o.status !== 'new',
     }))

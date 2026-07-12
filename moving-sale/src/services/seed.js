@@ -163,6 +163,8 @@ export const SEED_SETTINGS = {
   move_out_date: '2026-07-31',
   site_name: 'Maple St. Moving Sale',
   bundle_discount_pct: 10,
+  contact_phone: '',
+  hold_hours: 48,
   price_drops: [
     { days_before: 14, pct: 10 },
     { days_before: 7, pct: 20 },

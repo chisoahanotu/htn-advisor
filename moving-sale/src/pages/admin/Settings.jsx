@@ -5,7 +5,7 @@ import { Spinner, useToast } from '../../components/ui.jsx'
 
 export default function Settings() {
   const { data: settings, loading } = useQuery(() => api.getSettings())
-  const [form, setForm] = useState({ move_out_date: '', site_name: '', bundle_discount_pct: 0, price_drops: [] })
+  const [form, setForm] = useState({ move_out_date: '', site_name: '', bundle_discount_pct: 0, price_drops: [], contact_phone: '', hold_hours: 48 })
   const [toast, setToast] = useToast()
 
   useEffect(() => {
@@ -15,6 +15,8 @@ export default function Settings() {
         site_name: settings.site_name || '',
         bundle_discount_pct: settings.bundle_discount_pct ?? 0,
         price_drops: settings.price_drops || [],
+        contact_phone: settings.contact_phone || '',
+        hold_hours: settings.hold_hours ?? 48,
       })
   }, [settings])
 
@@ -51,6 +53,32 @@ export default function Settings() {
           <p className="hint">Drives the urgency banner shown to every buyer.</p>
         </div>
 
+        <div className="field">
+          <label>Your phone (for buyer texts)</label>
+          <input
+            type="tel"
+            value={form.contact_phone}
+            onChange={(e) => setForm({ ...form, contact_phone: e.target.value })}
+            placeholder="e.g. 401-555-0123"
+          />
+          <p className="hint">
+            Shown on listings as "text me to negotiate". Leave blank to hide it.
+          </p>
+        </div>
+        <div className="field">
+          <label>Hold duration (hours)</label>
+          <input
+            type="number"
+            min="1"
+            max="720"
+            value={form.hold_hours}
+            onChange={(e) => setForm({ ...form, hold_hours: Number(e.target.value) || 48 })}
+          />
+          <p className="hint">
+            Accepted purchases reserve an item this long. If it isn't marked sold in time, it
+            relists automatically and you get a Telegram heads-up.
+          </p>
+        </div>
         <div className="field">
           <label>Bundle discount (%)</label>
           <input

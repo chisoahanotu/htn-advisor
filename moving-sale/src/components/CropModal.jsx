@@ -2,6 +2,9 @@ import { useState, useCallback } from 'react'
 import Cropper from 'react-easy-crop'
 import { Modal } from './ui.jsx'
 
+// Gentle brightness/contrast/saturation lift for dim indoor phone shots.
+const ENHANCE_FILTER = 'brightness(1.08) contrast(1.1) saturate(1.08)'
+
 const ASPECTS = [
   ['4:3', 4 / 3],
   ['Square', 1],
@@ -19,7 +22,7 @@ function loadImage(src) {
 }
 
 // Renders the rotated image to a canvas, then cuts the crop region out of it.
-async function cropToFile(src, cropPixels, rotation, fileName) {
+async function cropToFile(src, cropPixels, rotation, fileName, enhance) {
   const img = await loadImage(src)
   const rad = (rotation * Math.PI) / 180
   // Bounding box of the rotated image
@@ -30,6 +33,7 @@ async function cropToFile(src, cropPixels, rotation, fileName) {
   canvas.width = bw
   canvas.height = bh
   const ctx = canvas.getContext('2d')
+  if (enhance && 'filter' in ctx) ctx.filter = ENHANCE_FILTER
   ctx.translate(bw / 2, bh / 2)
   ctx.rotate(rad)
   ctx.drawImage(img, -img.width / 2, -img.height / 2)
@@ -55,6 +59,7 @@ export default function CropModal({ src, fileName, onClose, onApply }) {
   const [rotation, setRotation] = useState(0)
   const [aspect, setAspect] = useState(4 / 3)
   const [areaPixels, setAreaPixels] = useState(null)
+  const [enhance, setEnhance] = useState(false)
   const [busy, setBusy] = useState(false)
 
   const onCropComplete = useCallback((_area, pixels) => setAreaPixels(pixels), [])
@@ -63,7 +68,7 @@ export default function CropModal({ src, fileName, onClose, onApply }) {
     if (!areaPixels) return
     setBusy(true)
     try {
-      const file = await cropToFile(src, areaPixels, rotation, fileName)
+      const file = await cropToFile(src, areaPixels, rotation, fileName, enhance)
       onApply(file)
     } finally {
       setBusy(false)
@@ -83,6 +88,7 @@ export default function CropModal({ src, fileName, onClose, onApply }) {
           onZoomChange={setZoom}
           onRotationChange={setRotation}
           onCropComplete={onCropComplete}
+          style={{ mediaStyle: enhance ? { filter: ENHANCE_FILTER } : undefined }}
         />
       </div>
 
@@ -99,6 +105,9 @@ export default function CropModal({ src, fileName, onClose, onApply }) {
           ))}
           <button className="chip" onClick={() => setRotation((r) => (r + 90) % 360)}>
             ⟳ Rotate 90°
+          </button>
+          <button className={`chip ${enhance ? 'active' : ''}`} onClick={() => setEnhance((v) => !v)}>
+            ✨ Enhance
           </button>
         </div>
         <div className="field" style={{ marginTop: 10 }}>
