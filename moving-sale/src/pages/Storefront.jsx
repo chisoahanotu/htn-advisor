@@ -6,13 +6,6 @@ import { money } from '../services/format.js'
 import { StatusBadge, Spinner } from '../components/ui.jsx'
 import { track } from '../services/analytics.js'
 
-const FILTERS = [
-  { key: 'all', label: 'Everything' },
-  { key: 'available', label: 'Available' },
-  { key: 'pending', label: 'Pending' },
-  { key: 'sold', label: 'Sold' },
-]
-
 // Items created from the same photo share a photo_group_id; single-item photos
 // fall back to their own id so every item lands in exactly one gallery tile.
 export function groupItems(items) {
@@ -89,8 +82,6 @@ function GalleryTile({ group }) {
 export default function Storefront() {
   const { data: items, loading } = useQuery(() => api.listItems())
   const { data: settings } = useQuery(() => api.getSettings())
-  const [filter, setFilter] = useState('all')
-  const [category, setCategory] = useState('all')
 
   useEffect(() => {
     track('catalog_viewed')
@@ -98,11 +89,7 @@ export default function Storefront() {
 
   if (loading) return <Spinner />
 
-  const categories = [...new Set(items.map((i) => i.category))].filter(Boolean)
-  const shown = items.filter(
-    (i) => (filter === 'all' || i.status === filter) && (category === 'all' || i.category === category),
-  )
-  const groups = groupItems(shown)
+  const groups = groupItems(items)
   const availableCount = items.filter((i) => i.status === 'available').length
 
   return (
@@ -125,33 +112,8 @@ export default function Storefront() {
         </div>
       )}
 
-      <div className="filter-bar">
-        {FILTERS.map((f) => (
-          <button
-            key={f.key}
-            className={`chip ${filter === f.key ? 'active' : ''}`}
-            onClick={() => setFilter(f.key)}
-          >
-            {f.label}
-          </button>
-        ))}
-      </div>
-
-      {categories.length > 0 && (
-        <div className="filter-bar">
-          <button className={`chip ${category === 'all' ? 'active' : ''}`} onClick={() => setCategory('all')}>
-            All categories
-          </button>
-          {categories.map((c) => (
-            <button key={c} className={`chip ${category === c ? 'active' : ''}`} onClick={() => setCategory(c)}>
-              {c}
-            </button>
-          ))}
-        </div>
-      )}
-
       {groups.length === 0 ? (
-        <div className="empty">No items in this view.</div>
+        <div className="empty">Nothing listed yet — check back soon.</div>
       ) : (
         <div className="grid">
           {groups.map((group) => (
