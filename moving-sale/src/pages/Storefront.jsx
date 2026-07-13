@@ -26,11 +26,26 @@ export function groupItems(items) {
 }
 
 // Price stamp pinned where the AI saw the item in the photo; items without a
-// position stack in the bottom-left corner instead.
-export function PriceStamps({ items }) {
+// position stack in the bottom-left corner instead. When the photo is shown
+// object-fit:cover in a fixed-ratio box (gallery tiles), positions are stored
+// relative to the FULL image, so remap them into the visible cropped region.
+function remapForCover(pos, imageAspect, boxAspect) {
+  if (!imageAspect || !boxAspect) return pos
+  let { x, y } = pos
+  if (imageAspect > boxAspect) {
+    const visible = boxAspect / imageAspect // horizontal fraction shown
+    x = (x - (1 - visible) / 2) / visible
+  } else if (imageAspect < boxAspect) {
+    const visible = imageAspect / boxAspect // vertical fraction shown
+    y = (y - (1 - visible) / 2) / visible
+  }
+  return { x: Math.min(0.94, Math.max(0.06, x)), y: Math.min(0.92, Math.max(0.08, y)) }
+}
+
+export function PriceStamps({ items, imageAspect = null, boxAspect = null }) {
   let stacked = 0
   return items.map((item) => {
-    const pos = item.photo_pos
+    const pos = item.photo_pos ? remapForCover(item.photo_pos, imageAspect, boxAspect) : null
     const style = pos
       ? { left: `${pos.x * 100}%`, top: `${pos.y * 100}%`, transform: 'translate(-50%, -50%)' }
       : { left: 10, bottom: 10 + 30 * stacked++ }
@@ -48,12 +63,18 @@ function GalleryTile({ group }) {
   const first = items[0]
   const allSold = items.every((i) => i.status === 'sold')
   const to = single ? `/item/${first.slug}` : `/photo/${group.key}`
+  const [imageAspect, setImageAspect] = useState(null)
 
   return (
     <Link to={to} className={`tile ${allSold ? 'is-sold' : ''}`}>
       <div className="tile-photo">
-        <img src={first.photos[0]} alt={single ? first.title : `${items.length} items`} loading="lazy" />
-        <PriceStamps items={items} />
+        <img
+          src={first.photos[0]}
+          alt={single ? first.title : `${items.length} items`}
+          loading="lazy"
+          onLoad={(e) => setImageAspect(e.target.naturalWidth / e.target.naturalHeight)}
+        />
+        <PriceStamps items={items} imageAspect={imageAspect} boxAspect={4 / 3} />
         {single && first.status !== 'available' && <StatusBadge status={first.status} corner />}
         {allSold && (
           <div className="sold-overlay">
