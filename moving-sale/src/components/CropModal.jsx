@@ -15,6 +15,9 @@ const ASPECTS = [
 function loadImage(src) {
   return new Promise((resolve, reject) => {
     const img = new Image()
+    // Needed to keep the canvas untainted when editing already-uploaded
+    // photos (Supabase storage sends permissive CORS headers).
+    img.crossOrigin = 'anonymous'
     img.onload = () => resolve(img)
     img.onerror = reject
     img.src = src
@@ -53,7 +56,7 @@ async function cropToFile(src, cropPixels, rotation, fileName, enhance) {
 }
 
 // Pan / zoom / rotate photo editor. onApply receives a new JPEG File.
-export default function CropModal({ src, fileName, onClose, onApply }) {
+export default function CropModal({ src, fileName, onClose, onApply, hint }) {
   const [crop, setCrop] = useState({ x: 0, y: 0 })
   const [zoom, setZoom] = useState(1)
   const [rotation, setRotation] = useState(0)
@@ -88,6 +91,7 @@ export default function CropModal({ src, fileName, onClose, onApply }) {
           onZoomChange={setZoom}
           onRotationChange={setRotation}
           onCropComplete={onCropComplete}
+          crossOrigin="anonymous"
           style={{ mediaStyle: enhance ? { filter: ENHANCE_FILTER } : undefined }}
         />
       </div>
@@ -124,8 +128,9 @@ export default function CropModal({ src, fileName, onClose, onApply }) {
       </div>
 
       <p className="hint" style={{ margin: '4px 0 12px' }}>
-        Drag to reposition, pinch or use the slider to zoom. Applying re-runs the AI analysis on the
-        cropped photo, so unpublished draft edits for this photo are replaced.
+        Drag to reposition, pinch or use the slider to zoom.{' '}
+        {hint ||
+          'Applying re-runs the AI analysis on the cropped photo, so unpublished draft edits for this photo are replaced.'}
       </p>
 
       <div className="row-actions">

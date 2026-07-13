@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { api } from '../services/backend.js'
+import { money } from '../services/format.js'
 import { Modal } from './ui.jsx'
+import CropModal from './CropModal.jsx'
 
 const DELIVERY_OPTS = [
   ['none', 'Pickup only'],
@@ -26,8 +28,10 @@ export default function ItemForm({ initial = {}, onClose, onSaved }) {
     delivery_fee: initial.delivery_fee ?? '',
     status: initial.status || 'available',
     photos: initial.photos?.length ? initial.photos : [],
+    photo_pos: initial.photo_pos ?? null,
   })
   const [busy, setBusy] = useState(false)
+  const [cropIdx, setCropIdx] = useState(null) // photo index being edited
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value })
 
   async function onFiles(e) {
@@ -44,9 +48,8 @@ export default function ItemForm({ initial = {}, onClose, onSaved }) {
       ...form,
       price: Number(form.price) || 0,
       delivery_fee: form.delivery_option === 'local_delivery' && form.delivery_fee !== '' ? Number(form.delivery_fee) : null,
-      // Multi-item photos: carried from the AI draft, not user-editable.
+      photo_pos: form.photo_pos ?? null,
       ...(initial.photo_group_id ? { photo_group_id: initial.photo_group_id } : {}),
-      ...(initial.photo_pos ? { photo_pos: initial.photo_pos } : {}),
     }
     if (editing) await api.updateItem(initial.id, payload)
     else await api.createItem(payload)
@@ -72,6 +75,14 @@ export default function ItemForm({ initial = {}, onClose, onSaved }) {
                   >
                     ×
                   </button>
+                  <button
+                    type="button"
+                    title="Crop / edit photo"
+                    onClick={() => setCropIdx(i)}
+                    style={{ position: 'absolute', top: 0, left: 0, background: 'rgba(0,0,0,0.6)', color: '#fff', border: 'none', width: 20, height: 18, borderRadius: '0 0 6px 0', cursor: 'pointer', fontSize: 10, lineHeight: 1 }}
+                  >
+                    ✂️
+                  </button>
                 </div>
               ))}
             </div>
@@ -79,6 +90,51 @@ export default function ItemForm({ initial = {}, onClose, onSaved }) {
           <input type="file" accept="image/*" multiple onChange={onFiles} />
           <p className="hint">Mobile-friendly upload. Photos upload automatically as you add them.</p>
         </div>
+
+        {form.photos.length > 0 && (
+          <div className="field">
+            <label>Price tag position</label>
+            <div
+              className="stamp-editor"
+              onClick={(e) => {
+                const r = e.currentTarget.getBoundingClientRect()
+                const x = Math.min(0.95, Math.max(0.05, (e.clientX - r.left) / r.width))
+                const y = Math.min(0.95, Math.max(0.05, (e.clientY - r.top) / r.height))
+                setForm((f) => ({ ...f, photo_pos: { x: Number(x.toFixed(3)), y: Number(y.toFixed(3)) } }))
+              }}
+            >
+              <img src={form.photos[0]} alt="price tag position" />
+              <span
+                className="price-stamp"
+                style={
+                  form.photo_pos
+                    ? {
+                        left: `${form.photo_pos.x * 100}%`,
+                        top: `${form.photo_pos.y * 100}%`,
+                        transform: 'translate(-50%, -50%)',
+                      }
+                    : { left: 10, bottom: 10 }
+                }
+              >
+                {money(Number(form.price) || 0)}
+              </span>
+            </div>
+            <p className="hint">
+              Tap the photo where the price tag should sit in the gallery.
+              {form.photo_pos ? ' ' : ' Currently pinned bottom-left. '}
+              {form.photo_pos && (
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-sm"
+                  style={{ padding: '2px 8px', fontSize: 12 }}
+                  onClick={() => setForm((f) => ({ ...f, photo_pos: null }))}
+                >
+                  Reset to corner
+                </button>
+              )}
+            </p>
+          </div>
+        )}
 
         <div className="field">
           <label>Title</label>
@@ -150,6 +206,21 @@ export default function ItemForm({ initial = {}, onClose, onSaved }) {
           {busy ? 'Saving…' : editing ? 'Save changes' : 'Add item'}
         </button>
       </form>
+
+      {cropIdx !== null && (
+        <CropModal
+          src={form.photos[cropIdx]}
+          fileName={`photo-${cropIdx + 1}.jpg`}
+          hint="The edited photo replaces this one on the listing when you apply."
+          onClose={() => setCropIdx(null)}
+          onApply={async (file) => {
+            const i = cropIdx
+            setCropIdx(null)
+            const [url] = await api.uploadPhotos([file])
+            setForm((f) => ({ ...f, photos: f.photos.map((p, j) => (j === i ? url : p)) }))
+          }}
+        />
+      )}
     </Modal>
   )
 }

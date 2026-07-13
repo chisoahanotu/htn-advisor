@@ -61,29 +61,6 @@ function GalleryTile({ group }) {
           </div>
         )}
       </div>
-      <div className="tile-body">
-        {single ? (
-          <>
-            <div className="tile-title">{first.title}</div>
-            <div className="tile-dims">{first.dimensions}</div>
-            <div className="tile-foot">
-              <span className="price">{money(first.price)}</span>
-              <span className="muted" style={{ fontSize: 12 }}>{first.condition}</span>
-            </div>
-          </>
-        ) : (
-          <>
-            <div className="tile-title">{items.length} items in this photo</div>
-            <div className="tile-dims">{items.map((i) => i.title).join(' · ')}</div>
-            <div className="tile-foot">
-              <span className="price">
-                {money(Math.min(...items.map((i) => i.price)))}–{money(Math.max(...items.map((i) => i.price)))}
-              </span>
-              <span className="muted" style={{ fontSize: 12 }}>tap to see each</span>
-            </div>
-          </>
-        )}
-      </div>
     </Link>
   )
 }
@@ -109,11 +86,16 @@ export default function Storefront() {
 
   return (
     <div className="wrap">
-      <div style={{ margin: '16px 0 4px' }}>
-        <h1 style={{ fontSize: 30, fontWeight: 800, letterSpacing: '-0.02em' }}>Everything Must Go</h1>
-        <p className="muted" style={{ marginTop: 6, fontSize: 15 }}>
-          {availableCount} items still available · Tap anything to buy it or book a pickup — no account needed.
-        </p>
+      <div className="hero">
+        <img className="hero-bg" src={`${import.meta.env.BASE_URL}hero.webp`} alt="" />
+        <div className="hero-veil" />
+        <div className="hero-text">
+          <h1>Everything Must Go</h1>
+          <p>
+            {availableCount} items still available · Tap any photo to buy or book a pickup — no account
+            needed.
+          </p>
+        </div>
       </div>
 
       {settings?.bundle_discount_pct > 0 && (
