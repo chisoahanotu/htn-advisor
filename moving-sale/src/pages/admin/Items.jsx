@@ -117,6 +117,7 @@ function DuplicateReview({ items }) {
 export default function Items() {
   const { data: items, loading } = useQuery(() => api.listItems())
   const { data: offers } = useQuery(() => api.listOffers())
+  const { data: visits } = useQuery(() => api.getVisitStats())
   const [editing, setEditing] = useState(null) // item or {} for new
   const [confirmDel, setConfirmDel] = useState(null)
 
@@ -125,7 +126,10 @@ export default function Items() {
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-        <p className="muted" style={{ fontSize: 13 }}>{items.length} listings</p>
+        <p className="muted" style={{ fontSize: 13 }}>
+          {items.length} listings
+          {visits && ` · 👣 ${visits.today} visits today · ${visits.total} total`}
+        </p>
         <button className="btn btn-primary btn-sm" onClick={() => setEditing({})}>
           + New item
         </button>

@@ -207,6 +207,15 @@ export const api = {
   },
 
   // ---- offers (buyer action -> Telegram) ----
+  async recordVisit() {
+    db.visits = db.visits || { total: 0, today: 0 }
+    db.visits.total += 1
+    db.visits.today += 1
+    persist()
+  },
+  async getVisitStats() {
+    return { total: db.visits?.total ?? 0, today: db.visits?.today ?? 0 }
+  },
   async recordView(itemId) {
     const item = db.items.find((i) => i.id === itemId)
     if (item) item.views = (item.views || 0) + 1

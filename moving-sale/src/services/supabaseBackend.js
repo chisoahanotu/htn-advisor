@@ -190,6 +190,24 @@ export const api = {
   },
 
   // ---- offers (buyer action -> Telegram via Edge Function) ----
+  // Homepage visit counter (daily buckets; deduped per browser session upstream).
+  async recordVisit() {
+    try {
+      await client().rpc('record_visit')
+    } catch {
+      /* analytics must never break the page */
+    }
+  },
+  async getVisitStats() {
+    const { data, error } = await client().from('site_visits').select('*')
+    check(error)
+    const today = new Date().toISOString().slice(0, 10)
+    return {
+      total: (data || []).reduce((n, r) => n + r.count, 0),
+      today: (data || []).find((r) => r.day === today)?.count ?? 0,
+    }
+  },
+
   // Fire-and-forget anonymous view counter (SECURITY DEFINER RPC).
   async recordView(itemId) {
     try {

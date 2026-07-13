@@ -85,6 +85,15 @@ export default function Storefront() {
 
   useEffect(() => {
     track('catalog_viewed')
+    // One visit per browser session, so refreshes and back-navigation don't inflate.
+    try {
+      if (!sessionStorage.getItem('ms_visited')) {
+        sessionStorage.setItem('ms_visited', '1')
+        api.recordVisit()
+      }
+    } catch {
+      api.recordVisit()
+    }
   }, [])
 
   if (loading) return <Spinner />
