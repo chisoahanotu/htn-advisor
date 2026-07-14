@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom'
 import { api } from '../services/backend.js'
 import { useQuery } from '../services/useStore.js'
 import { money, DELIVERY_LABELS, formatWindow, formatDate } from '../services/format.js'
-import { StatusBadge, Modal, Spinner, useToast } from '../components/ui.jsx'
+import { Modal, Spinner, useToast } from '../components/ui.jsx'
 import { track } from '../services/analytics.js'
 
 const MY_OFFERS_KEY = 'moving_sale_my_offers'
@@ -233,9 +233,6 @@ export default function ItemPage() {
         </div>
 
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-            <StatusBadge status={item.status} />
-          </div>
           <h1>{item.title}</h1>
           <div className="price-lg">
             {money(item.price)}
@@ -269,17 +266,12 @@ export default function ItemPage() {
                 </button>
               </>
             ) : (
-              <div className="pill">
-                {item.status === 'sold' ? 'This item has sold' : 'Reserved — pending pickup'}
-              </div>
+              <div className="pill">This listing is no longer available</div>
             )}
             <button className="btn btn-ghost" onClick={copyLink}>
               🔗 Copy link
             </button>
           </div>
-          {!actionable && (
-            <p className="hint">Sold and pending items stay listed for reference but can't be reserved.</p>
-          )}
           {settings?.contact_phone && (
             <p className="hint" style={{ marginTop: 10 }}>
               💬 Questions or want to negotiate? Text me at{' '}

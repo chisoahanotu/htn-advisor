@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { api } from '../services/backend.js'
 import { useQuery } from '../services/useStore.js'
 import { money } from '../services/format.js'
-import { StatusBadge, Spinner } from '../components/ui.jsx'
+import { Spinner } from '../components/ui.jsx'
 import { track } from '../services/analytics.js'
 
 // Items created from the same photo share a photo_group_id; single-item photos
@@ -54,12 +54,11 @@ function GalleryTile({ group }) {
   const items = group.items
   const single = items.length === 1
   const first = items[0]
-  const allSold = items.every((i) => i.status === 'sold')
   const to = single ? `/item/${first.slug}` : `/photo/${group.key}`
   const [imageAspect, setImageAspect] = useState(null)
 
   return (
-    <Link to={to} className={`tile ${allSold ? 'is-sold' : ''}`}>
+    <Link to={to} className="tile">
       <div className="tile-photo">
         <img
           src={first.photos[0]}
@@ -68,12 +67,6 @@ function GalleryTile({ group }) {
           onLoad={(e) => setImageAspect(e.target.naturalWidth / e.target.naturalHeight)}
         />
         <PriceStamps items={items} imageAspect={imageAspect} boxAspect={4 / 3} />
-        {single && first.status !== 'available' && <StatusBadge status={first.status} corner />}
-        {allSold && (
-          <div className="sold-overlay">
-            <span>SOLD</span>
-          </div>
-        )}
       </div>
     </Link>
   )
@@ -98,8 +91,9 @@ export default function Storefront() {
 
   if (loading) return <Spinner />
 
-  const groups = groupItems(items)
-  const availableCount = items.filter((i) => i.status === 'available').length
+  // Buyers only ever see live inventory — sold and on-hold items vanish from
+  // the public site entirely (no counts, no SOLD badges).
+  const groups = groupItems(items.filter((i) => i.status === 'available'))
 
   return (
     <div className="wrap">
@@ -108,10 +102,7 @@ export default function Storefront() {
         <div className="hero-veil" />
         <div className="hero-text">
           <h1>Everything Must Go</h1>
-          <p>
-            {availableCount} items still available · Tap any photo to buy or book a pickup — no account
-            needed.
-          </p>
+          <p>Tap any photo to buy it or book a pickup — no account needed.</p>
         </div>
       </div>
 

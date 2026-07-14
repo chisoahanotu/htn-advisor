@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom'
 import { api } from '../services/backend.js'
 import { useQuery } from '../services/useStore.js'
 import { money, DELIVERY_LABELS } from '../services/format.js'
-import { StatusBadge, Spinner } from '../components/ui.jsx'
+import { Spinner } from '../components/ui.jsx'
 import { track } from '../services/analytics.js'
 import { OfferModal, BookingModal } from './ItemPage.jsx'
 import { PriceStamps } from './Storefront.jsx'
@@ -31,7 +31,7 @@ export default function PhotoGroupPage() {
 
   if (loading) return <Spinner />
 
-  const members = (items || []).filter((i) => i.photo_group_id === groupId)
+  const members = (items || []).filter((i) => i.photo_group_id === groupId && i.status === 'available')
   if (members.length === 0)
     return (
       <div className="wrap">
@@ -67,15 +67,11 @@ export default function PhotoGroupPage() {
       )}
 
       {members.map((item) => {
-        const actionable = item.status === 'available'
         return (
           <div className="card group-item" key={item.id}>
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                  <h2 style={{ fontSize: 18, fontWeight: 800 }}>{item.title}</h2>
-                  <StatusBadge status={item.status} />
-                </div>
+                <h2 style={{ fontSize: 18, fontWeight: 800 }}>{item.title}</h2>
                 <div className="price" style={{ fontSize: 20, marginTop: 4 }}>
                   {money(item.price)}
                   {item.original_price > item.price && (
@@ -84,18 +80,12 @@ export default function PhotoGroupPage() {
                 </div>
               </div>
               <div className="row-actions" style={{ alignItems: 'flex-start' }}>
-                {actionable ? (
-                  <>
-                    <button className="btn btn-primary btn-sm" onClick={() => setModal({ kind: 'offer', item })}>
-                      🛒 I'll take it — {money(item.price)}
-                    </button>
-                    <button className="btn btn-ghost btn-sm" onClick={() => setModal({ kind: 'booking', item })}>
-                      Request pickup
-                    </button>
-                  </>
-                ) : (
-                  <span className="pill">{item.status === 'sold' ? 'Sold' : 'Reserved'}</span>
-                )}
+                <button className="btn btn-primary btn-sm" onClick={() => setModal({ kind: 'offer', item })}>
+                  🛒 I'll take it — {money(item.price)}
+                </button>
+                <button className="btn btn-ghost btn-sm" onClick={() => setModal({ kind: 'booking', item })}>
+                  Request pickup
+                </button>
               </div>
             </div>
             <p className="desc" style={{ marginTop: 8 }}>{item.description}</p>
