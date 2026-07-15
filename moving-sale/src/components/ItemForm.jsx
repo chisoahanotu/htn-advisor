@@ -29,6 +29,7 @@ export default function ItemForm({ initial = {}, onClose, onSaved }) {
     status: initial.status || 'available',
     photos: initial.photos?.length ? initial.photos : [],
     photo_pos: initial.photo_pos ?? null,
+    hide_stamp: initial.hide_stamp ?? false,
   })
   const [busy, setBusy] = useState(false)
   const [cropIdx, setCropIdx] = useState(null) // photo index being edited
@@ -133,6 +134,15 @@ export default function ItemForm({ initial = {}, onClose, onSaved }) {
                 </button>
               )}
             </p>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, marginTop: 6, cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={form.hide_stamp}
+                onChange={(e) => setForm((f) => ({ ...f, hide_stamp: e.target.checked }))}
+                style={{ width: 'auto' }}
+              />
+              Hide price tag on the photo (listing still shows when the photo is opened)
+            </label>
           </div>
         )}
 

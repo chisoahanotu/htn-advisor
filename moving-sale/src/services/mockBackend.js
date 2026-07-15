@@ -178,6 +178,7 @@ export const api = {
       status: data.status || 'available',
       photo_group_id: data.photo_group_id ?? null,
       photo_pos: data.photo_pos ?? null,
+      hide_stamp: data.hide_stamp ?? false,
       created_at: now,
       updated_at: now,
     }

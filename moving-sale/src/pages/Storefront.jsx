@@ -37,7 +37,9 @@ function remapForCover(pos, imageAspect, boxAspect) {
 
 export function PriceStamps({ items, imageAspect = null, boxAspect = null }) {
   let stacked = 0
-  return items.map((item) => {
+  // Items with hide_stamp keep their listing but skip the stamp — used to
+  // declutter photos crowded with too many prices.
+  return items.filter((i) => !i.hide_stamp).map((item) => {
     const pos = item.photo_pos ? remapForCover(item.photo_pos, imageAspect, boxAspect) : null
     const style = pos
       ? { left: `${pos.x * 100}%`, top: `${pos.y * 100}%`, transform: 'translate(-50%, -50%)' }
