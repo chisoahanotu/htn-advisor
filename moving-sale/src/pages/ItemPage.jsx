@@ -34,6 +34,28 @@ function nextPriceDrop(settings) {
   return upcoming[0] || null
 }
 
+// "Sells new for ~$X" deal framing; only renders when the retail price
+// actually beats the asking price, so stale data can't undercut the pitch.
+export function RetailCompare({ item, compact = false }) {
+  if (!item.retail_price || item.retail_price <= item.price) return null
+  const pct = Math.round((1 - item.price / item.retail_price) * 100)
+  return (
+    <p className={`retail-compare${compact ? ' compact' : ''}`}>
+      Sells new for ~{money(item.retail_price)}
+      {item.retail_url && (
+        <>
+          {' ('}
+          <a href={item.retail_url} target="_blank" rel="noopener noreferrer">
+            see it
+          </a>
+          {')'}
+        </>
+      )}{' '}
+      — save {pct}%
+    </p>
+  )
+}
+
 function Confirm({ text }) {
   return (
     <div className="confirm-box">
@@ -238,6 +260,7 @@ export default function ItemPage() {
             {money(item.price)}
             {hasOriginalPrice && <span className="was-price">was {money(item.original_price)}</span>}
           </div>
+          <RetailCompare item={item} />
           {drop && (
             <p className="hint price-drop-hint">
               Price drops {drop.pct}% on {formatDate(drop.date.toISOString(), { month: 'short', day: 'numeric' })}

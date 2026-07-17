@@ -30,6 +30,8 @@ export default function ItemForm({ initial = {}, onClose, onSaved }) {
     photos: initial.photos?.length ? initial.photos : [],
     photo_pos: initial.photo_pos ?? null,
     hide_stamp: initial.hide_stamp ?? false,
+    retail_price: initial.retail_price ?? '',
+    retail_url: initial.retail_url || '',
   })
   const [busy, setBusy] = useState(false)
   const [cropIdx, setCropIdx] = useState(null) // photo index being edited
@@ -48,6 +50,8 @@ export default function ItemForm({ initial = {}, onClose, onSaved }) {
     const payload = {
       ...form,
       price: Number(form.price) || 0,
+      retail_price: form.retail_price !== '' ? Number(form.retail_price) : null,
+      retail_url: form.retail_url.trim() || null,
       delivery_fee: form.delivery_option === 'local_delivery' && form.delivery_fee !== '' ? Number(form.delivery_fee) : null,
       photo_pos: form.photo_pos ?? null,
       ...(initial.photo_group_id ? { photo_group_id: initial.photo_group_id } : {}),
@@ -181,6 +185,23 @@ export default function ItemForm({ initial = {}, onClose, onSaved }) {
           <label>Description</label>
           <textarea value={form.description} onChange={set('description')} />
         </div>
+
+        <div className="two-col">
+          <div className="field">
+            <label>Retail price new (USD, optional)</label>
+            <input type="number" min="0" value={form.retail_price} onChange={set('retail_price')} />
+          </div>
+          <div className="field">
+            <label>Retail link (optional)</label>
+            <input type="url" value={form.retail_url} onChange={set('retail_url')} placeholder="https://…" />
+          </div>
+        </div>
+        {form.retail_price !== '' && Number(form.retail_price) > (Number(form.price) || 0) && (
+          <p className="hint" style={{ marginTop: -6, marginBottom: 12 }}>
+            Buyers will see: "Sells new for ~{money(Number(form.retail_price))} — save{' '}
+            {Math.round((1 - (Number(form.price) || 0) / Number(form.retail_price)) * 100)}%"
+          </p>
+        )}
 
         <div className="two-col">
           <div className="field">

@@ -142,6 +142,8 @@ export const api = {
       photo_group_id: data.photo_group_id ?? null,
       photo_pos: data.photo_pos ?? null,
       hide_stamp: data.hide_stamp ?? false,
+      retail_price: data.retail_price ?? null,
+      retail_url: data.retail_url || null,
     }
     for (;;) {
       const { data: row, error } = await client()

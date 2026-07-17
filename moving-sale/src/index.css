@@ -171,6 +171,11 @@ img { max-width: 100%; display: block; }
 .was-price { font-size: 15px; font-weight: 600; color: var(--ink3); text-decoration: line-through; margin-left: 10px; }
 .price-drop-hint { margin: 2px 0 14px; }
 
+/* "Sells new for ~$X — save Y%" deal framing under the price */
+.retail-compare { font-size: 14px; font-weight: 600; color: var(--green); margin: 2px 0 10px; }
+.retail-compare.compact { font-size: 13px; margin: 2px 0 0; }
+.retail-compare a { color: inherit; text-decoration: underline; }
+
 /* bundle discount banner on the storefront */
 .bundle-banner { margin: 12px 0 0; background: var(--green-light); color: var(--green); }
 

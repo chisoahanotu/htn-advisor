@@ -5,7 +5,7 @@ import { useQuery } from '../services/useStore.js'
 import { money, DELIVERY_LABELS } from '../services/format.js'
 import { Spinner } from '../components/ui.jsx'
 import { track } from '../services/analytics.js'
-import { OfferModal, BookingModal } from './ItemPage.jsx'
+import { OfferModal, BookingModal, RetailCompare } from './ItemPage.jsx'
 import { PriceStamps } from './Storefront.jsx'
 
 // One photo, several listings. Reached from the gallery when a photo's items
@@ -78,6 +78,7 @@ export default function PhotoGroupPage() {
                     <span className="was-price"> was {money(item.original_price)}</span>
                   )}
                 </div>
+                <RetailCompare item={item} compact />
               </div>
               <div className="row-actions" style={{ alignItems: 'flex-start' }}>
                 <button className="btn btn-primary btn-sm" onClick={() => setModal({ kind: 'offer', item })}>
