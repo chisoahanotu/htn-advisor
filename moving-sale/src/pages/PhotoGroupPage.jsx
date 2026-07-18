@@ -92,7 +92,7 @@ export default function PhotoGroupPage() {
             <p className="desc" style={{ marginTop: 8 }}>{item.description}</p>
             <p className="muted" style={{ fontSize: 13, marginTop: 6 }}>
               {item.dimensions ? `${item.dimensions} · ` : ''}
-              {item.condition} · {item.category} · {DELIVERY_LABELS[item.delivery_option]}
+              {item.category} · {DELIVERY_LABELS[item.delivery_option]}
               {item.delivery_fee ? ` (${money(item.delivery_fee)})` : ''}
             </p>
             <Link to={`/item/${item.slug}`} className="hint" style={{ display: 'inline-block', marginTop: 6 }}>

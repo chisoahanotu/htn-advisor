@@ -224,10 +224,10 @@ export default function ItemPage() {
     setToast('Link copied to clipboard')
   }
 
+  // Condition is intentionally absent — buyers only see what the item is.
   const specs = [
     ['Price', money(item.price)],
     ['Dimensions', item.dimensions || '—'],
-    ['Condition', item.condition],
     ['Category', item.category],
     ['Delivery', DELIVERY_LABELS[item.delivery_option] + (item.delivery_fee ? ` · ${money(item.delivery_fee)}` : '')],
   ]
